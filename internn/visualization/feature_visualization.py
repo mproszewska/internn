@@ -10,6 +10,7 @@ import math
 from internn.plot import Plotter
 from internn.report import Reporter
 
+
 def normalize_gradient(gradient):
     """
     Normalizes gradient based on its std.
@@ -48,7 +49,7 @@ def gradient_ascent_normalized(image, gradient, step_size=2.0):
     """
     image += normalize_gradient(gradient) * step_size
     return image
-    
+
 
 def gradient_ascent_burred(image, gradient, step_size=2.0, grad_sigma=1.0):
     """
@@ -70,11 +71,13 @@ def gradient_ascent_burred(image, gradient, step_size=2.0, grad_sigma=1.0):
     ndarray
         Updated image.
     """
-    gradient_blurred = cv2.GaussianBlur(src=gradient, ksize=(1,1), sigmaX=grad_sigma)
+    gradient_blurred = cv2.GaussianBlur(src=gradient, ksize=(1, 1), sigmaX=grad_sigma)
     return gradient_ascent_normalized(image, gradient_blurred, step_size)
 
 
-def gradient_ascent_smooth(image, gradient, step, step_size=2.0, grad_sigma=(0.15,0.5)):
+def gradient_ascent_smooth(
+    image, gradient, step, step_size=2.0, grad_sigma=(0.15, 0.5)
+):
     """
     Perfoms gradinet ascent on image with new gradient created by adding initial gradient 3 times,
     each time with differently parametrized gaussian blur. I also normalizes this gradient.
@@ -102,12 +105,14 @@ def gradient_ascent_smooth(image, gradient, step, step_size=2.0, grad_sigma=(0.1
     sigma = alpha * step + const
     smooth_gradient = np.zeros_like(gradient)
     for factor in [0.5, 1.0, 2.0]:
-        smooth_gradient += cv2.GaussianBlur(src=gradient, ksize=(1,1), sigmaX=sigma*factor)
-        
-    return gradient_ascent_normalized(image, smooth_gradient, step_size)
-    
+        smooth_gradient += cv2.GaussianBlur(
+            src=gradient, ksize=(1, 1), sigmaX=sigma * factor
+        )
 
-def random_roll(array):    
+    return gradient_ascent_normalized(image, smooth_gradient, step_size)
+
+
+def random_roll(array):
     """
     Rolls array randomly vertically and horizontally.
 
@@ -128,10 +133,10 @@ def random_roll(array):
     height, width, _ = array.shape
     height_roll = np.random.random_integers(-height, height)
     width_roll = np.random.random_integers(-width, width)
-    
-    array_rolled = np.roll(array, height_roll, axis=0)    
+
+    array_rolled = np.roll(array, height_roll, axis=0)
     array_rolled = np.roll(array_rolled, width_roll, axis=1)
-    
+
     return array_rolled, height_roll, width_roll
 
 
@@ -155,10 +160,10 @@ def unroll(array, height_shift, width_shift):
     """
     gradient_unrolled = np.roll(gradient_unrolled, -height_shift, axis=0)
     gradient_unrolled = np.roll(gradient, -width_shift, axis=1)
-    
+
     return gradient_unrolled
 
-    
+
 def tile_real_size(size, tile_size=512):
     """
     Calculates optimal tile size, so that the last tile is not much smaller.
@@ -180,19 +185,31 @@ def tile_real_size(size, tile_size=512):
 
 
 class FeatureVisualization:
-    
     def __init__(self, model, reporter=None, plotter=None):
         self.model = model
         self.reporter = Reporter() if reporter is None else reporter
         self.plotter = Plotter() if plotter is None else plotter
-      
 
     def __call__(
-            self, feature_tensor, input_image, num_epochs=5, num_octaves_per_epoch=5,
-            steps_per_octave=10, step_size=2.0, tile_size=512, tiles="shift",
-            gradient_ascent="normal", grad_sigma=None, norm=2, op="mean", octave_scale=0.7,
-            blend=0.2, ksize=(1,1), sigma=1, interpolation=cv2.INTER_LANCZOS4 
-        ):
+        self,
+        feature_tensor,
+        input_image,
+        num_epochs=5,
+        num_octaves_per_epoch=5,
+        steps_per_octave=10,
+        step_size=2.0,
+        tile_size=512,
+        tiles="shift",
+        gradient_ascent="normal",
+        grad_sigma=None,
+        norm=2,
+        op="mean",
+        octave_scale=0.7,
+        blend=0.2,
+        ksize=(1, 1),
+        sigma=1,
+        interpolation=cv2.INTER_LANCZOS4,
+    ):
         """
         Performs feature visualization on image by maximazing activations in given activation
         tensor.
@@ -248,7 +265,7 @@ class FeatureVisualization:
         """
         if self.__class__.__name__ == "FeatureVisualization":
             self.reporter.report_feature_visualization(self.__class__.__name__)
-            
+
         self.reporter.report_parameters(
             num_epochs=num_epochs,
             num_octaves_per_epoch=num_octaves_per_epoch,
@@ -264,16 +281,16 @@ class FeatureVisualization:
             blend=blend,
             ksize=ksize,
             sigma=sigma,
-            interpolation=interpolation
-            )   
-                 
+            interpolation=interpolation,
+        )
+
         image = input_image.copy().astype(np.float64)
-        
+
         for epoch in range(num_epochs):
             image = self.epoch_step(
                 feature_tensor=feature_tensor,
                 input_image=image,
-                epoch = epoch,
+                epoch=epoch,
                 num_octaves_per_epoch=num_octaves_per_epoch,
                 steps_per_octave=steps_per_octave,
                 step_size=step_size,
@@ -287,18 +304,31 @@ class FeatureVisualization:
                 blend=blend,
                 ksize=ksize,
                 sigma=sigma,
-                interpolation=interpolation
-                )
+                interpolation=interpolation,
+            )
 
         return image
-    
-    
+
     def epoch_step(
-            self, feature_tensor, input_image, epoch, num_octaves_per_epoch=5, steps_per_octave=10, 
-            step_size=2.0, tile_size=512, tiles="shift", gradient_ascent="normal", grad_sigma=None, 
-            norm=2, op="mean", octave_scale=0.7, blend=0.2, ksize=(1,1), sigma=1, 
-            interpolation=cv2.INTER_LANCZOS4
-            ):
+        self,
+        feature_tensor,
+        input_image,
+        epoch,
+        num_octaves_per_epoch=5,
+        steps_per_octave=10,
+        step_size=2.0,
+        tile_size=512,
+        tiles="shift",
+        gradient_ascent="normal",
+        grad_sigma=None,
+        norm=2,
+        op="mean",
+        octave_scale=0.7,
+        blend=0.2,
+        ksize=(1, 1),
+        sigma=1,
+        interpolation=cv2.INTER_LANCZOS4,
+    ):
         """
         Epoch step of feature visualization.
 
@@ -350,21 +380,23 @@ class FeatureVisualization:
         -------
         ndarray
             Input image that maximizes activations in given tensor.
-        """    
-        
+        """
+
         if num_octaves_per_epoch > 0:
-            
+
             image_blurred = cv2.GaussianBlur(src=input_image, ksize=ksize, sigmaX=sigma)
 
             new_height = int(image_blurred.shape[0] * octave_scale)
             new_width = int(image_blurred.shape[1] * octave_scale)
             dsize = (new_width, new_height)
-            scaled_input_image = cv2.resize(image_blurred, dsize=dsize, interpolation=interpolation)
-            
+            scaled_input_image = cv2.resize(
+                image_blurred, dsize=dsize, interpolation=interpolation
+            )
+
             output_image = self.epoch_step(
                 feature_tensor=feature_tensor,
                 input_image=scaled_input_image,
-                epoch = epoch,
+                epoch=epoch,
                 num_octaves_per_epoch=num_octaves_per_epoch - 1,
                 steps_per_octave=steps_per_octave,
                 step_size=step_size,
@@ -372,40 +404,56 @@ class FeatureVisualization:
                 tiles=tiles,
                 gradient_ascent=gradient_ascent,
                 grad_sigma=grad_sigma,
-                norm=norm, op=op,
+                norm=norm,
+                op=op,
                 octave_scale=octave_scale,
                 blend=blend,
                 ksize=ksize,
-                sigma=sigma,interpolation=interpolation
-                )
+                sigma=sigma,
+                interpolation=interpolation,
+            )
 
             height, width = input_image.shape[0:2]
             dsize = (width, height)
-            output_image = cv2.resize(output_image, dsize=dsize, interpolation=interpolation)
-            input_image = cv2.addWeighted(input_image, blend, output_image, 1-blend, 0)
+            output_image = cv2.resize(
+                output_image, dsize=dsize, interpolation=interpolation
+            )
+            input_image = cv2.addWeighted(
+                input_image, blend, output_image, 1 - blend, 0
+            )
 
         output_image = self.octave_step(
-               feature_tensor=feature_tensor,
-               input_image=input_image,
-               epoch = epoch,
-               octave = num_octaves_per_epoch,
-               steps_per_octave=steps_per_octave,
-               step_size=step_size,
-               tile_size=tile_size,
-               norm=norm, op=op,
-               grad_sigma=grad_sigma,
-               gradient_ascent=gradient_ascent,
-               tiles=tiles
-               )
-            
+            feature_tensor=feature_tensor,
+            input_image=input_image,
+            epoch=epoch,
+            octave=num_octaves_per_epoch,
+            steps_per_octave=steps_per_octave,
+            step_size=step_size,
+            tile_size=tile_size,
+            norm=norm,
+            op=op,
+            grad_sigma=grad_sigma,
+            gradient_ascent=gradient_ascent,
+            tiles=tiles,
+        )
+
         return output_image
-        
-        
+
     def octave_step(
-            self, feature_tensor, input_image, epoch, octave, steps_per_octave=10, step_size=2.0, 
-            tile_size=512, tiles="shift", gradient_ascent="normal",  grad_sigma=None, norm=2, 
-            op="mean"     
-        ):
+        self,
+        feature_tensor,
+        input_image,
+        epoch,
+        octave,
+        steps_per_octave=10,
+        step_size=2.0,
+        tile_size=512,
+        tiles="shift",
+        gradient_ascent="normal",
+        grad_sigma=None,
+        norm=2,
+        op="mean",
+    ):
         """
         Octave step of feature visualization.   
 
@@ -457,31 +505,35 @@ class FeatureVisualization:
         for step in range(steps_per_octave):
 
             loss_result, gradient_result = self.tiled_gradient(
-                loss_func=loss_func, 
-                image=image, 
-                tile_size=tile_size,
-                tiles=tiles
-                )
+                loss_func=loss_func, image=image, tile_size=tile_size, tiles=tiles
+            )
 
             losses.append(loss_result)
-            
+
             if gradient_ascent == "normal":
                 image = gradient_ascent_normalized(image, gradient_result, step_size)
             elif gradient_ascent == "blurred":
                 grad_sigma = 1.0 if grad_sigma is None else grad_sigma
-                image = gradient_ascent_blurred(image, gradient_result, step_size, grad_sigma)
+                image = gradient_ascent_blurred(
+                    image, gradient_result, step_size, grad_sigma
+                )
             elif gradient_ascent == "smooth":
-                grad_sigma = (4.0,0.5,[0.5,1.0,2.0]) if grad_sigma is None else grad_sigma
-                image = gradient_ascent_smooth(image, gradient_result, step, step_size, grad_sigma)
+                grad_sigma = (
+                    (4.0, 0.5, [0.5, 1.0, 2.0]) if grad_sigma is None else grad_sigma
+                )
+                image = gradient_ascent_smooth(
+                    image, gradient_result, step, step_size, grad_sigma
+                )
             else:
-                raise ValueError("Unsupported gradient_ascent value {}.".format(gradient_ascent))
-            
+                raise ValueError(
+                    "Unsupported gradient_ascent value {}.".format(gradient_ascent)
+                )
+
         self.reporter.report_octave(losses, epoch, octave)
-        self.plotter.plot_losses(losses,epoch, octave)
+        self.plotter.plot_losses(losses, epoch, octave)
         self.plotter.plot_image(image, epoch, octave)
-            
+
         return image
-  
 
     def tiled_gradient(self, loss_func, image, tile_size=512, tiles="shift"):
         """
@@ -512,58 +564,78 @@ class FeatureVisualization:
             Calculated gradient.
         """
         gradient_func = tf.gradients(ys=loss_func, xs=self.model.input)[0]
-        gradient_func /= (tf.math.reduce_std(gradient_func) + 1e-8)
-        
+        gradient_func /= tf.math.reduce_std(gradient_func) + 1e-8
+
         gradient = np.zeros_like(image)
         loss = 0
 
         height, weight, _ = image.shape
         tile_height = tile_real_size(height, tile_size)
         tile_weight = tile_real_size(weight, tile_size)
-        
+
         if tiles == "roll":
             image, height_roll, width_roll = random_roll(image)
         elif tiles == "shift":
             start_height = int(np.random.uniform(-0.75, -0.25) * tile_height)
-            start_weight = int(np.random.uniform(-0.75, -0.25) * tile_weight) 
-        else: raise ValueError("Unsupported tiles value: {}.".format(tiles))
-            
+            start_weight = int(np.random.uniform(-0.75, -0.25) * tile_weight)
+        else:
+            raise ValueError("Unsupported tiles value: {}.".format(tiles))
+
         hs = range(start_height, height, tile_height)
         ws = range(start_weight, weight, tile_weight)
-        
-        for h in hs:      
+
+        for h in hs:
             for w in ws:
-                
-                image_tile = image[max(h, 0):h + tile_height, max(w, 0):w+tile_weight, :]         
+
+                image_tile = image[
+                    max(h, 0) : h + tile_height, max(w, 0) : w + tile_weight, :
+                ]
                 image_tile = np.expand_dims(image_tile, axis=0)
 
                 sess = tf.compat.v1.get_default_session()
-                
+
                 try:
-                    feed_dict = {self.model.input_name : image_tile}
-                    tile_loss, tile_gradient = sess.run([loss_func, gradient_func], feed_dict)
+                    feed_dict = {self.model.input_name: image_tile}
+                    tile_loss, tile_gradient = sess.run(
+                        [loss_func, gradient_func], feed_dict
+                    )
                 except tf.errors.InvalidArgumentError as e:
                     print("Tile skiped: {}".format(e.message))
                     continue
-                    
+
                 loss += np.nan_to_num(tile_loss)
-                gradient[max(h, 0):h + tile_height, max(w, 0):w + tile_weight, :] = tile_gradient
-            
+                gradient[
+                    max(h, 0) : h + tile_height, max(w, 0) : w + tile_weight, :
+                ] = tile_gradient
+
         if tiles == "roll":
             gradient = unroll(grad, height_roll, width_roll)
-            
+
         return loss, gradient
 
-    
+
 class LayerVisualization(FeatureVisualization):
-    
     def __call__(
-            self, layer_name, input_image, num_epochs=5, num_octaves_per_epoch=5,
-            steps_per_octave=10, step_size=2.0, tile_size=512, tiles="shift",
-            gradient_ascent="normal", grad_sigma = None, norm=2, op="mean", octave_scale=0.7,
-            blend=0.2, ksize=(1,1), sigma=1, interpolation=cv2.INTER_LANCZOS4
-        ):
-         
+        self,
+        layer_name,
+        input_image,
+        num_epochs=5,
+        num_octaves_per_epoch=5,
+        steps_per_octave=10,
+        step_size=2.0,
+        tile_size=512,
+        tiles="shift",
+        gradient_ascent="normal",
+        grad_sigma=None,
+        norm=2,
+        op="mean",
+        octave_scale=0.7,
+        blend=0.2,
+        ksize=(1, 1),
+        sigma=1,
+        interpolation=cv2.INTER_LANCZOS4,
+    ):
+
         """
         Calls FeatureVisualization for given layer.
         
@@ -620,7 +692,7 @@ class LayerVisualization(FeatureVisualization):
             self.reporter.report_feature_visualization(self.__class__.__name__)
             self.reporter.report_layer_visualization(layer_name)
 
-        layer_tensor =  self.model.find_layer_tensor(layer_name)
+        layer_tensor = self.model.find_layer_tensor(layer_name)
         return super().__call__(
             feature_tensor=layer_tensor,
             input_image=input_image,
@@ -638,18 +710,32 @@ class LayerVisualization(FeatureVisualization):
             blend=blend,
             ksize=ksize,
             sigma=sigma,
-            interpolation=interpolation
-            )
-    
-                        
-class NeuronVisualization(FeatureVisualization):
+            interpolation=interpolation,
+        )
 
+
+class NeuronVisualization(FeatureVisualization):
     def __call__(
-            self, layer_name, neuron_num, input_image, num_epochs=5, num_octaves_per_epoch=5,
-            steps_per_octave=10, step_size=2.0, tile_size=512, tiles="shift",
-            gradient_ascent="normal", grad_sigma = None, norm=2, op="mean", octave_scale=0.7,
-            blend=0.2, ksize=(1,1), sigma=1, interpolation=cv2.INTER_LANCZOS4 
-        ):
+        self,
+        layer_name,
+        neuron_num,
+        input_image,
+        num_epochs=5,
+        num_octaves_per_epoch=5,
+        steps_per_octave=10,
+        step_size=2.0,
+        tile_size=512,
+        tiles="shift",
+        gradient_ascent="normal",
+        grad_sigma=None,
+        norm=2,
+        op="mean",
+        octave_scale=0.7,
+        blend=0.2,
+        ksize=(1, 1),
+        sigma=1,
+        interpolation=cv2.INTER_LANCZOS4,
+    ):
         """
         Calls FeatureVisualization for specific neuron.
         
@@ -707,39 +793,52 @@ class NeuronVisualization(FeatureVisualization):
         if self.__class__.__name__ == "NeuronVisualization":
             self.reporter.report_feature_visualization(self.__class__.__name__)
             self.reporter.report_neuron_visualization(layer_name, neuron_num)
-            
-        neuron_tensor = self.model.find_neuron_tensor(layer_name, neuron_num)
-        
-        return super().__call__(
-             feature_tensor=neuron_tensor,
-             input_image=input_image,
-             num_epochs=num_epochs,
-             num_octaves_per_epoch=num_octaves_per_epoch,
-             steps_per_octave=steps_per_octave,
-             step_size=step_size,
-             tile_size=tile_size,
-             tiles=tiles,
-             gradient_ascent=gradient_ascent,
-             grad_sigma=grad_sigma,
-             norm=norm,
-             op=op,
-             octave_scale=octave_scale,
-             blend=blend,
-             ksize=ksize,
-             sigma=sigma,
-             interpolation=interpolation
-             )
 
-    
+        neuron_tensor = self.model.find_neuron_tensor(layer_name, neuron_num)
+
+        return super().__call__(
+            feature_tensor=neuron_tensor,
+            input_image=input_image,
+            num_epochs=num_epochs,
+            num_octaves_per_epoch=num_octaves_per_epoch,
+            steps_per_octave=steps_per_octave,
+            step_size=step_size,
+            tile_size=tile_size,
+            tiles=tiles,
+            gradient_ascent=gradient_ascent,
+            grad_sigma=grad_sigma,
+            norm=norm,
+            op=op,
+            octave_scale=octave_scale,
+            blend=blend,
+            ksize=ksize,
+            sigma=sigma,
+            interpolation=interpolation,
+        )
+
+
 class OutputClassVisualization(NeuronVisualization):
-    
-     def __call__(
-            self, class_num, input_image, num_epochs=5, num_octaves_per_epoch=5,
-            steps_per_octave=10, step_size=2.0, tile_size=512, tiles="shift",
-            gradient_ascent="normal", grad_sigma = None, norm=2, op="mean", octave_scale=0.7,
-            blend=0.2, ksize=(1,1), sigma=1, interpolation=cv2.INTER_LANCZOS4
-        ):
-         """
+    def __call__(
+        self,
+        class_num,
+        input_image,
+        num_epochs=5,
+        num_octaves_per_epoch=5,
+        steps_per_octave=10,
+        step_size=2.0,
+        tile_size=512,
+        tiles="shift",
+        gradient_ascent="normal",
+        grad_sigma=None,
+        norm=2,
+        op="mean",
+        octave_scale=0.7,
+        blend=0.2,
+        ksize=(1, 1),
+        sigma=1,
+        interpolation=cv2.INTER_LANCZOS4,
+    ):
+        """
          Calls FeatureVisuzalization for certain class by calling it on neuron in last the layer.
 
          PARAMETERS
@@ -791,34 +890,34 @@ class OutputClassVisualization(NeuronVisualization):
          ndarray
              Input image that maximizes activations in given tensor.
          """
-         if self.__class__.__name__ == "OutputClassVisualization":
-             self.reporter.report_feature_visualization(self.__class__.__name__)
-             self.reporter.report_output_class_visualization(class_num)
-             
-         if class_num is None:
-             input_image_expanded = np.expand_dims(input_image, axis=0)
-             feed_dict = {self.model.input_name: input_image_expanded}
-             sess = tf.compat.v1.get_default_session()
-             output = sess.run(self.model.output, feed_dict)[0]
-             class_num = np.argmax(output)
-         
-         return super().__call__(
-             layer_name=self.model.output_name,
-             neuron_num=class_num,
-             input_image=input_image,
-             num_epochs=num_epochs,
-             num_octaves_per_epoch=num_octaves_per_epoch,
-             steps_per_octave=steps_per_octave,
-             step_size=step_size,
-             tile_size=tile_size,
-             tiles=tiles,
-             gradient_ascent=gradient_ascent,
-             grad_sigma=grad_sigma,
-             norm=norm,
-             op=op,
-             octave_scale=octave_scale,
-             blend=blend,
-             ksize=ksize,
-             sigma=sigma,
-             interpolation=interpolation
-             )
+        if self.__class__.__name__ == "OutputClassVisualization":
+            self.reporter.report_feature_visualization(self.__class__.__name__)
+            self.reporter.report_output_class_visualization(class_num)
+
+        if class_num is None:
+            input_image_expanded = np.expand_dims(input_image, axis=0)
+            feed_dict = {self.model.input_name: input_image_expanded}
+            sess = tf.compat.v1.get_default_session()
+            output = sess.run(self.model.output, feed_dict)[0]
+            class_num = np.argmax(output)
+
+        return super().__call__(
+            layer_name=self.model.output_name,
+            neuron_num=class_num,
+            input_image=input_image,
+            num_epochs=num_epochs,
+            num_octaves_per_epoch=num_octaves_per_epoch,
+            steps_per_octave=steps_per_octave,
+            step_size=step_size,
+            tile_size=tile_size,
+            tiles=tiles,
+            gradient_ascent=gradient_ascent,
+            grad_sigma=grad_sigma,
+            norm=norm,
+            op=op,
+            octave_scale=octave_scale,
+            blend=blend,
+            ksize=ksize,
+            sigma=sigma,
+            interpolation=interpolation,
+        )

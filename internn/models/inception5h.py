@@ -8,13 +8,14 @@ import os
 from .common import download, load_conv_layers, load_weights
 from .core import Model
 
+
 class Inception5hModel(Model):
     """
     The Inception 5h Model trained to classify images into 1000 categories. 
     """
+
     input_name = "input:0"
     output_name = "output2:0"
-    
 
     def __init__(self):
         """
@@ -26,9 +27,9 @@ class Inception5hModel(Model):
 
         download(url=url, dest_dir=model_dir)
         path = os.path.join(model_dir, graph_def_path)
-        
+
         self.graph = tf.Graph()
-        with self.graph.as_default():           
+        with self.graph.as_default():
             with tf.io.gfile.GFile(path, "rb") as f:
                 graph_def = tf.compat.v1.GraphDef()
                 graph_def.ParseFromString(f.read())

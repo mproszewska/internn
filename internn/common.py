@@ -6,10 +6,9 @@ def squeeze_2D(array, op="max"):
     if op == "mean":
         return array.mean(axis=2)
     raise ValueError("Invalid map_op value: {}".format(op))
-    
+
 
 def scale_to_image(array):
     array_scaled = (array - array.min()) / (array.max() - array.min())
     image = (255.0 * array_scaled).astype("uint8")
     return image
-    
