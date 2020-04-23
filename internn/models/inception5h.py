@@ -5,7 +5,7 @@ import tensorflow as tf
 
 import os
 
-from .common import download
+from .common import download, load_conv_layers, load_weights
 from .core import Model
 
 class Inception5hModel(Model):
@@ -13,21 +13,8 @@ class Inception5hModel(Model):
     The Inception 5h Model trained to classify images into 1000 categories. 
     """
     input_name = "input:0"
-    layers_names = [
-        "conv2d0:0",
-        "conv2d1:0",
-        "conv2d2:0",
-        "mixed3a:0",
-        "mixed3b:0",
-        "mixed4a:0",
-        "mixed4b:0",
-        "mixed4c:0",
-        "mixed4d:0",
-        "mixed4e:0",
-        "mixed5a:0",
-        "mixed5b:0",
-        "output2:0",
-    ]
+    output_name = "output2:0"
+    
 
     def __init__(self):
         """
@@ -48,6 +35,6 @@ class Inception5hModel(Model):
                 tf.import_graph_def(graph_def, name="")
 
         self.input = self.graph.get_tensor_by_name(self.input_name)
-        self.layers = [
-                self.graph.get_tensor_by_name(name) for name in self.layers_names
-            ]
+        self.conv_layers, self.conv_layers_names = load_conv_layers(self.graph)
+        self.output = self.graph.get_tensor_by_name(self.output_name)
+        self.weights, self.weights_names = load_weights(graph_def)

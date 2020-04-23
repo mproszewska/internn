@@ -2,12 +2,15 @@
 Common functions for handling models.
 """
 import os
+import re
 import sys
 import tarfile
 import zipfile
 
 from pathlib import Path
 from urllib.request import urlretrieve
+from tensorflow.python.framework import tensor_util
+
 
 def download(url, dest_dir):
     """
@@ -46,3 +49,21 @@ def download(url, dest_dir):
             return
 
         print("Done.")
+
+def load_conv_layers(graph):
+    layers_names = [op.name for op in graph.get_operations() if op.type=='Conv2D']
+    layers = list()
+    
+    for i in range(len(layers_names)):
+        layer_name = re.search('(.+?)/conv',layers_names[i]).group(1)
+        layers.append(graph.get_tensor_by_name("{}:0".format(layer_name)))
+        
+    return layers, layers_names
+
+def load_weights(graph_def):
+    weight_nodes = [n for n in graph_def.node if n.op=="Const" and n.name.find("/")==-1] 
+    
+    weight_names = [n.name for n in weight_nodes]
+    weights = [tensor_util.MakeNdarray(n.attr['value'].tensor) for n in weight_nodes]
+   
+    return weights, weight_names

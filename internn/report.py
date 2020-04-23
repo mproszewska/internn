@@ -43,20 +43,20 @@ class Reporter:
             print("visualization_name={}".format(visualization_name))
            
             
-    def report_layer_visualization(self, layer_num):
+    def report_layer_visualization(self, layer_name):
         """
         Prints parameters specific to LayerVisualization. 
         """
         if self.display:
-            print("layer_num={}".format(layer_num))
+            print("layer_name={}".format(layer_name))
             
             
-    def report_neuron_visualization(self, layer_num, neuron_num):
+    def report_neuron_visualization(self, layer_name, neuron_num):
         """
         Prints parameters specific to NeuronVisualization. 
         """
         if self.display:
-            print("layer_num={}".format(layer_num))
+            print("layer_name={}".format(layer_name))
             print("neuron_num={}".format(neuron_num))
 
             
@@ -75,3 +75,10 @@ class Reporter:
         if self.display: 
             msg = "Epoch: {}. Octave: {}. Loss mean {:.4f}, min: {:.4f}, max: {:.4f}."
             print(msg.format(epoch, octave, np.mean(losses), np.min(losses), np.max(losses)))
+            
+    def report_saliency_map(self, attribution_name, norm, norm_op, map_op):
+        if self.display:
+            print("attribution={}".format(attribution_name))
+            print("norm={}".format(norm))
+            print("norm_op={}".format(norm_op))
+            print("map_op={}".format(norm_op))

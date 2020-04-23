@@ -558,7 +558,7 @@ class FeatureVisualization:
 class LayerVisualization(FeatureVisualization):
     
     def __call__(
-            self, layer_num, input_image, num_epochs=5, num_octaves_per_epoch=5,
+            self, layer_name, input_image, num_epochs=5, num_octaves_per_epoch=5,
             steps_per_octave=10, step_size=2.0, tile_size=512, tiles="shift",
             gradient_ascent="normal", grad_sigma = None, norm=2, op="mean", octave_scale=0.7,
             blend=0.2, ksize=(1,1), sigma=1, interpolation=cv2.INTER_LANCZOS4
@@ -569,8 +569,8 @@ class LayerVisualization(FeatureVisualization):
         
         PARAMETERS
         ----------
-        layer_num : int
-            Layer number in layers array in Model.
+        layer_name : str
+            Name of layer.
         input_image : ndarray
             Image which will be upaded, so that activations for this image are maximized.
         num_epochs : int, optional
@@ -618,10 +618,10 @@ class LayerVisualization(FeatureVisualization):
         """
         if self.__class__.__name__ == "LayerVisualization":
             self.reporter.report_feature_visualization(self.__class__.__name__)
-            self.reporter.report_layer_visualization(layer_num)
+            self.reporter.report_layer_visualization(layer_name)
 
-        layer_tensor =  self.model.layers[layer_num]
-        return super(LayerVisualization,self).__call__(
+        layer_tensor =  self.model.find_layer_tensor(layer_name)
+        return super().__call__(
             feature_tensor=layer_tensor,
             input_image=input_image,
             num_epochs=num_epochs,
@@ -645,7 +645,7 @@ class LayerVisualization(FeatureVisualization):
 class NeuronVisualization(FeatureVisualization):
 
     def __call__(
-            self, layer_num, neuron_num, input_image, num_epochs=5, num_octaves_per_epoch=5,
+            self, layer_name, neuron_num, input_image, num_epochs=5, num_octaves_per_epoch=5,
             steps_per_octave=10, step_size=2.0, tile_size=512, tiles="shift",
             gradient_ascent="normal", grad_sigma = None, norm=2, op="mean", octave_scale=0.7,
             blend=0.2, ksize=(1,1), sigma=1, interpolation=cv2.INTER_LANCZOS4 
@@ -655,8 +655,8 @@ class NeuronVisualization(FeatureVisualization):
         
         PARAMETERS
         ----------
-        layer_num : int
-            Layer number.
+        layer_name : str
+            Name of layer.
         neuron_num : int
             Neuron number in layer.
         input_image : ndarray
@@ -706,17 +706,11 @@ class NeuronVisualization(FeatureVisualization):
          """
         if self.__class__.__name__ == "NeuronVisualization":
             self.reporter.report_feature_visualization(self.__class__.__name__)
-            self.reporter.report_neuron_visualization(layer_num, neuron_num)
-
-        layer = self.model.layers[layer_num]
- 
-        neuron_begin = np.zeros(len(layer.shape), dtype=np.int32)
-        neuron_begin[-1] = neuron_num
-        neuron_size = - np.ones(len(layer.shape), dtype=np.int32)
-        neuron_size[-1] = 1
-        neuron_tensor = tf.slice(layer, begin=neuron_begin, size=neuron_size)
+            self.reporter.report_neuron_visualization(layer_name, neuron_num)
+            
+        neuron_tensor = self.model.find_neuron_tensor(layer_name, neuron_num)
         
-        return super(NeuronVisualization,self).__call__(
+        return super().__call__(
              feature_tensor=neuron_tensor,
              input_image=input_image,
              num_epochs=num_epochs,
@@ -750,8 +744,8 @@ class OutputClassVisualization(NeuronVisualization):
 
          PARAMETERS
          ----------
-         class_num : int
-             Class number.
+         class_num : int or None
+             Class number. If None, visualization is done for predicted class.
          input_image : ndarray
              Image which will be upaded, so that activations for this image are maximized.
          num_epochs : int, optional
@@ -800,9 +794,16 @@ class OutputClassVisualization(NeuronVisualization):
          if self.__class__.__name__ == "OutputClassVisualization":
              self.reporter.report_feature_visualization(self.__class__.__name__)
              self.reporter.report_output_class_visualization(class_num)
+             
+         if class_num is None:
+             input_image_expanded = np.expand_dims(input_image, axis=0)
+             feed_dict = {self.model.input_name: input_image_expanded}
+             sess = tf.compat.v1.get_default_session()
+             output = sess.run(self.model.output, feed_dict)[0]
+             class_num = np.argmax(output)
          
-         return super(OutputClassVisualization,self).__call__(
-             layer_num=-1,
+         return super().__call__(
+             layer_name=self.model.output_name,
              neuron_num=class_num,
              input_image=input_image,
              num_epochs=num_epochs,
