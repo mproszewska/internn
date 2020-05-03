@@ -1,9 +1,8 @@
 """
 Implementation of algorithm that creates saliency map from gradients.
 """
-import tensorflow as tf
-
 import cv2
+import tensorflow as tf
 
 from .core import Interpretation
 from ..common import create_gradient, create_heatmap, squeeze_into_2D

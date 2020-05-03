@@ -8,16 +8,12 @@ from datetime import datetime
 import internn as inn
 
 
-@pytest.mark.parametrize(
-    "display", [True, False],
-)
-@pytest.mark.parametrize(
-    "save", [True, False],
-)
+@pytest.mark.parametrize("display", [True, False],)
+@pytest.mark.parametrize("save", [True, False])
 def test_plot_image(display, save, capsys):
+    save_dir = str(datetime.now())
     image = np.random.uniform(0, 255, size=(100, 100, 3)).astype(np.uint8)
 
-    save_dir = str(datetime.now())
     plotter = inn.Plotter(save_dir=save_dir, display=display, save=save)
     plotter.plot_image(image, filename="test_name")
 
@@ -41,9 +37,9 @@ def test_plot_image(display, save, capsys):
     "display, save", [(True, True), (True, False), (False, True), (False, False)]
 )
 def test_plot_losses(display, save, capsys):
+    save_dir = str(datetime.now())
     losses = [7, 10, 4]
 
-    save_dir = str(datetime.now())
     plotter = inn.Plotter(save_dir=save_dir, display=display, save=save)
     plotter.plot_losses(losses, title_suffix="tile_suf", filename_suffix="_suf")
 

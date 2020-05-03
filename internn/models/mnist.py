@@ -1,11 +1,8 @@
 """
 Handling MNIST digits classification Model.
 """
-import cv2
-import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
-
 import os
 
 from .core import Model

@@ -1,10 +1,8 @@
 import pytest
 
 import numpy as np
-import tensorflow as tf
 
 import internn as inn
-
 from ..common import activation_loss, squeeze_into_2D, scale_to_image
 
 
@@ -14,7 +12,6 @@ from ..common import activation_loss, squeeze_into_2D, scale_to_image
 )
 @pytest.mark.parametrize("norm, op", [(2, "max"), (1, "mean")])
 def test_activation_loss(Model, size, norm, op):
-
     model = Model()
     sess = model.start_session()
 

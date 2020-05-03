@@ -2,10 +2,9 @@
 Implementations of feature visualization algotithms.
 """
 import cv2
+import math
 import numpy as np
 import tensorflow as tf
-
-import math
 
 from .core import Interpretation
 from ..common import activation_loss
@@ -208,13 +207,13 @@ class FeatureVisualization(Interpretation):
         tiles="shift",
         gradient_ascent="normal",
         grad_sigma=None,
-        loss_norm=2,
-        loss_op="mean",
         octave_scale=0.7,
         blend=0.2,
         ksize=(1, 1),
         sigma=1,
         interpolation=cv2.INTER_LANCZOS4,
+        loss_norm=2,
+        loss_op="mean"
     ):
         """
         Performs feature visualization on image by maximazing activations in given activation
@@ -245,11 +244,6 @@ class FeatureVisualization(Interpretation):
         grad_sigma : None, float or tuple of two floats, optional
             Sigma parameter in gaussian blur performed on calculated gradient. If None, it is equal
             1 for "blurred" and (0.15, 0.5) for "smooth".
-        loss_norm : int, optional
-            Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
-        loss_op : str, optional
-            Operation which combines norms of neurons into one value. Acceptable values are "mean",
-            "max", "min", "std".
         octave_scale : float, optional
             Scaling factor in octave. The default is 0.7.
         blend : float, optional
@@ -263,6 +257,11 @@ class FeatureVisualization(Interpretation):
         interpolation : cv2 interpolation type, optional
             Parameter for gaussian blur performed on input image in octave. The default is 
             cv2.INTER_LANCZOS4.
+        loss_norm : int, optional
+            Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
+        loss_op : str, optional
+            Operation which combines norms of neurons into one value. Acceptable values are "mean",
+            "max", "min", "std".
 
         RETURNS
         -------
@@ -282,13 +281,13 @@ class FeatureVisualization(Interpretation):
             "tiles": tiles,
             "gradient_ascent": gradient_ascent,
             "grad_sigma": grad_sigma,
-            "loss_norm": loss_norm,
-            "loss_op": loss_op,
             "octave_scale": octave_scale,
             "blend": blend,
             "ksize": ksize,
             "sigma": sigma,
             "interpolation": interpolation,
+            "loss_norm": loss_norm,
+            "loss_op": loss_op
         }
         self.reporter.report_parameters(params)
 
@@ -308,13 +307,13 @@ class FeatureVisualization(Interpretation):
                 tiles=tiles,
                 gradient_ascent=gradient_ascent,
                 grad_sigma=grad_sigma,
-                loss_norm=loss_norm,
-                loss_op=loss_op,
                 octave_scale=octave_scale,
                 blend=blend,
                 ksize=ksize,
                 sigma=sigma,
                 interpolation=interpolation,
+                loss_norm=loss_norm,
+                loss_op=loss_op
             )
 
         if image.shape != input_image.shape:
@@ -335,13 +334,13 @@ class FeatureVisualization(Interpretation):
         tiles="shift",
         gradient_ascent="normal",
         grad_sigma=None,
-        loss_norm=2,
-        loss_op="mean",
         octave_scale=0.7,
         blend=0.2,
         ksize=(1, 1),
         sigma=1,
         interpolation=cv2.INTER_LANCZOS4,
+        loss_norm=2,
+        loss_op="mean"
     ):
         """
         Epoch step of feature visualization.
@@ -373,11 +372,6 @@ class FeatureVisualization(Interpretation):
         grad_sigma : float or tuple of two floats, optional
             Sigma parameter in gaussian blur performed on calculated gradient. If None, it is equal
             1 for "blurred" and (0.15, 0.5) for "smooth".
-        loss_norm : int, optional
-            Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
-        loss_op : str, optional
-            Operation which combines norms of neurons into one value. Acceptable values are "mean",
-            "max", "min", "std".
         octave_scale : float, optional
             Scaling factor in octave. The default is 0.7.
         blend : float, optional
@@ -391,6 +385,11 @@ class FeatureVisualization(Interpretation):
         interpolation : cv2 interpolation type, optional
             Parameter for gaussian blur performed on input image in octave. The default is 
             cv2.INTER_LANCZOS4.
+        loss_norm : int, optional
+            Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
+        loss_op : str, optional
+            Operation which combines norms of neurons into one value. Acceptable values are "mean",
+            "max", "min", "std".
 
         RETURNS
         -------
@@ -422,13 +421,13 @@ class FeatureVisualization(Interpretation):
                 tiles=tiles,
                 gradient_ascent=gradient_ascent,
                 grad_sigma=grad_sigma,
-                loss_norm=loss_norm,
-                loss_op=loss_op,
                 octave_scale=octave_scale,
                 blend=blend,
                 ksize=ksize,
                 sigma=sigma,
                 interpolation=interpolation,
+                loss_norm=loss_norm,
+                loss_op=loss_op
             )
 
             height, width = input_image.shape[0:2]
@@ -449,12 +448,12 @@ class FeatureVisualization(Interpretation):
             steps_per_octave=steps_per_octave,
             step_size=step_size,
             tile_size=tile_size,
-            loss_norm=loss_norm,
-            loss_op=loss_op,
             grad_sigma=grad_sigma,
             gradient_ascent=gradient_ascent,
             tiles=tiles,
             interpolation=interpolation,
+            loss_norm=loss_norm,
+            loss_op=loss_op
         )
 
         return output_image
@@ -472,9 +471,9 @@ class FeatureVisualization(Interpretation):
         tiles="shift",
         gradient_ascent="normal",
         grad_sigma=None,
+        interpolation=cv2.INTER_LANCZOS4,
         loss_norm=2,
         loss_op="mean",
-        interpolation=cv2.INTER_LANCZOS4,
     ):
         """
         Octave step of feature visualization.   
@@ -506,13 +505,13 @@ class FeatureVisualization(Interpretation):
         grad_sigma : float or tuple of two floats, optional
             Sigma parameter in gaussian blur performed on calculated gradient. If None, it is equal
             1 for "blurred" and (0.15, 0.5) for "smooth".
+        interpolation : cv2 interpolation type, optional
+            Parameter used to resize created image to output_image_dsize.
         loss_norm : int, optional
             Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
         loss_op : str, optional
             Operation which combines norms of neurons into one value. Acceptable values are "mean",
             "max", "min", "std".
-        interpolation : cv2 interpolation type, optional
-            Parameter used to resize created image to output_image_dsize
             
         RAISES
         ------
@@ -669,13 +668,13 @@ class LayerVisualization(FeatureVisualization):
         tiles="shift",
         gradient_ascent="normal",
         grad_sigma=None,
-        loss_norm=2,
-        loss_op="mean",
         octave_scale=0.7,
         blend=0.2,
         ksize=(1, 1),
         sigma=1,
         interpolation=cv2.INTER_LANCZOS4,
+        loss_norm=2,
+        loss_op="mean"
     ):
 
         """
@@ -706,11 +705,6 @@ class LayerVisualization(FeatureVisualization):
         grad_sigma : None, float or tuple of two floats, optional
             Sigma parameter in gaussian blur performed on calculated gradient. If None, it is equal
             1 for "blurred" and (0.15, 0.5) for "smooth".
-        loss_norm : int, optional
-            Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
-        loss_op : str, optional
-            Operation which combines norms of neurons into one value. Acceptable values are "mean",
-            "max", "min", "std".
         octave_scale : float, optional
             Scaling factor in octave. The default is 0.7.
         blend : float, optional
@@ -724,6 +718,11 @@ class LayerVisualization(FeatureVisualization):
         interpolation : cv2 interpolation type, optional
             Parameter for gaussian blur performed on input image in octave. The default is 
             cv2.INTER_LANCZOS4.
+        loss_norm : int, optional
+            Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
+        loss_op : str, optional
+            Operation which combines norms of neurons into one value. Acceptable values are "mean",
+            "max", "min", "std".
 
         RETURNS
         -------
@@ -750,13 +749,13 @@ class LayerVisualization(FeatureVisualization):
             tiles=tiles,
             gradient_ascent=gradient_ascent,
             grad_sigma=grad_sigma,
-            loss_norm=loss_norm,
-            loss_op=loss_op,
             octave_scale=octave_scale,
             blend=blend,
             ksize=ksize,
             sigma=sigma,
             interpolation=interpolation,
+            loss_norm=loss_norm,
+            loss_op=loss_op
         )
 
 
@@ -774,13 +773,13 @@ class NeuronVisualization(FeatureVisualization):
         tiles="shift",
         gradient_ascent="normal",
         grad_sigma=None,
-        loss_norm=2,
-        loss_op="mean",
         octave_scale=0.7,
         blend=0.2,
         ksize=(1, 1),
         sigma=1,
         interpolation=cv2.INTER_LANCZOS4,
+        loss_norm=2,
+        loss_op="mean",
     ):
         """
         Calls FeatureVisualization for specific neuron.
@@ -812,11 +811,6 @@ class NeuronVisualization(FeatureVisualization):
         grad_sigma : None, float or tuple of two floats, optional
             Sigma parameter in gaussian blur performed on calculated gradient. If None, it is equal
             1 for "blurred" and (0.15, 0.5) for "smooth".
-        loss_norm : int, optional
-            Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
-        loss_op : str, optional
-            Operation which combines norms of neurons into one value. Acceptable values are "mean",
-           "max", "min", "std".
         octave_scale : float, optional
             Scaling factor in octave. The default is 0.7.
         blend : float, optional
@@ -830,6 +824,11 @@ class NeuronVisualization(FeatureVisualization):
         interpolation : cv2 interpolation type, optional
             Parameter for gaussian blur performed on input image in octave. The default is 
             cv2.INTER_LANCZOS4.
+        loss_norm : int, optional
+            Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
+        loss_op : str, optional
+            Operation which combines norms of neurons into one value. Acceptable values are "mean",
+           "max", "min", "std".
 
         RETURNS
          -------
@@ -857,13 +856,13 @@ class NeuronVisualization(FeatureVisualization):
             tiles=tiles,
             gradient_ascent=gradient_ascent,
             grad_sigma=grad_sigma,
-            loss_norm=loss_norm,
-            loss_op=loss_op,
             octave_scale=octave_scale,
             blend=blend,
             ksize=ksize,
             sigma=sigma,
             interpolation=interpolation,
+            loss_norm=loss_norm,
+            loss_op=loss_op
         )
 
 
@@ -880,13 +879,13 @@ class OutputClassVisualization(NeuronVisualization):
         tiles="shift",
         gradient_ascent="normal",
         grad_sigma=None,
-        loss_norm=2,
-        loss_op="mean",
         octave_scale=0.7,
         blend=0.2,
         ksize=(1, 1),
         sigma=1,
         interpolation=cv2.INTER_LANCZOS4,
+        loss_norm=2,
+        loss_op="mean"
     ):
         """
          Calls FeatureVisuzalization for certain class by calling it on neuron in last the layer.
@@ -916,11 +915,6 @@ class OutputClassVisualization(NeuronVisualization):
          grad_sigma : None, float or tuple of two floats, optional
              Sigma parameter in gaussian blur performed on calculated gradient. If None, it is equal
              1 for "blurred" and (0.15, 0.5) for "smooth".
-         loss_norm : int, optional
-             Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
-         loss_op : str, optional
-             Operation which combines norms of neurons into one value. Acceptable values are "mean",
-            "max", "min", "std".
          octave_scale : float, optional
              Scaling factor in octave. The default is 0.7.
          blend : float, optional
@@ -934,6 +928,11 @@ class OutputClassVisualization(NeuronVisualization):
          interpolation : cv2 interpolation type, optional
              Parameter for gaussian blur performed on input image in octave. The default is 
              cv2.INTER_LANCZOS4.
+         loss_norm : int, optional
+             Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
+         loss_op : str, optional
+             Operation which combines norms of neurons into one value. Acceptable values are "mean",
+            "max", "min", "std".
 
          RETURNS
          -------
@@ -966,11 +965,11 @@ class OutputClassVisualization(NeuronVisualization):
             tiles=tiles,
             gradient_ascent=gradient_ascent,
             grad_sigma=grad_sigma,
-            loss_norm=loss_norm,
-            loss_op=loss_op,
             octave_scale=octave_scale,
             blend=blend,
             ksize=ksize,
             sigma=sigma,
             interpolation=interpolation,
+            loss_norm=loss_norm,
+            loss_op=loss_op
         )

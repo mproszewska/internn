@@ -1,8 +1,6 @@
 import pytest
 
-import cv2
 import numpy as np
-import tensorflow as tf
 
 import internn as inn
 
@@ -17,8 +15,8 @@ def test_activation_visualization(Model, shape, squeeze_op):
     sess = model.start_session()
 
     input_image = np.random.uniform(0, 255, size=shape).astype(np.uint8)
-
     interpretator = inn.ActivationVisualization(model)
+
     output_images = interpretator(model.conv_layers, input_image, squeeze_op=squeeze_op)
     assert len(output_images) == len(model.conv_layers)
     sess.close()
@@ -30,7 +28,7 @@ def test_activation_visualization(Model, shape, squeeze_op):
 )
 @pytest.mark.parametrize(
     "squeeze_op, interpolation, colormap, blend",
-    [("max", 1, 3, 0.2), ("mean", 2, 0, 0.9)],
+[("max", 1, 3, 0.2), ("mean", 2, 0, 0.9)],
 )
 def test_activation_visualization_output(
     Model, shape, layer_num, squeeze_op, interpolation, colormap, blend
@@ -65,8 +63,8 @@ def test_activation_visualization_error(Model, shape, blend):
     sess = model.start_session()
 
     input_image = np.random.uniform(0, 255, size=shape).astype(np.uint8)
-
     interpretator = inn.ActivationVisualization(model)
+
     with pytest.raises(ValueError):
         interpretator(model.conv_layers, input_image, blend=blend)
     sess.close()
@@ -82,8 +80,8 @@ def test_layer_activation_visualization(Model, shape, layer_num):
 
     layer_name = model.conv_layers_names[layer_num]
     input_image = np.random.uniform(0, 255, size=shape).astype(np.uint8)
-
     interpretator = inn.LayerActivationVisualization(model)
+
     output_image = interpretator(layer_name, input_image)
 
     assert output_image.shape[0:2] == input_image.shape[0:2]
@@ -91,9 +89,7 @@ def test_layer_activation_visualization(Model, shape, layer_num):
     sess.close()
 
 
-@pytest.mark.parametrize(
-    "Model, shape, layer_num", [(inn.Inception5hModel, (100, 100, 3), 20)],
-)
+@pytest.mark.parametrize("Model, shape, layer_num", [(inn.Inception5hModel, (100, 100, 3), 20)],)
 @pytest.mark.parametrize("tiles", ["shift", "roll"])
 @pytest.mark.parametrize("gradient_ascent", ["normal", "blurred", "smooth"])
 def test_feature_visualization(Model, shape, layer_num, tiles, gradient_ascent):
@@ -117,9 +113,7 @@ def test_feature_visualization(Model, shape, layer_num, tiles, gradient_ascent):
     sess.close()
 
 
-@pytest.mark.parametrize(
-    "Model, shape, layer_num", [(inn.MNISTModel, (28, 28, 1), 1)],
-)
+@pytest.mark.parametrize("Model, shape, layer_num", [(inn.MNISTModel, (28, 28, 1), 1)],)
 @pytest.mark.parametrize("tiles", ["roll"])
 def test_mnist_feature_visualization(Model, shape, layer_num, tiles):
     model = Model()
@@ -143,15 +137,12 @@ def test_mnist_feature_visualization(Model, shape, layer_num, tiles):
 
 
 @pytest.mark.parametrize("Model", [inn.Inception5hModel])
-@pytest.mark.parametrize(
-    "layer_name", ["mixed4e_3x3_pre_relu/conv", "conv2d2_pre_relu/conv"]
-)
+@pytest.mark.parametrize("layer_name", ["mixed4e_3x3_pre_relu/conv", "conv2d2_pre_relu/conv"])
 def test_layer_visualization(Model, layer_name):
     model = Model()
     sess = model.start_session()
 
     input_image = np.random.uniform(0, 255, size=(100, 100, 3)).astype(np.uint8)
-
     interpretator = inn.LayerVisualization(model)
 
     output_image = interpretator(
@@ -164,16 +155,13 @@ def test_layer_visualization(Model, layer_name):
 
 
 @pytest.mark.parametrize("Model", [inn.Inception5hModel])
-@pytest.mark.parametrize(
-    "layer_name", ["mixed4e_3x3_pre_relu/conv", "conv2d2_pre_relu/conv"]
-)
+@pytest.mark.parametrize("layer_name", ["mixed4e_3x3_pre_relu/conv", "conv2d2_pre_relu/conv"])
 @pytest.mark.parametrize("neuron_num", [1, 50])
 def test_neuron_visualization(Model, layer_name, neuron_num):
     model = Model()
     sess = model.start_session()
 
     input_image = np.random.uniform(0, 255, size=(100, 100, 3)).astype(np.uint8)
-
     interpretator = inn.NeuronVisualization(model)
 
     output_image = interpretator(
@@ -192,7 +180,6 @@ def test_output_class_visualization(Model, class_num):
     sess = model.start_session()
 
     input_image = np.random.uniform(0, 255, size=(100, 100, 3)).astype(np.uint8)
-
     interpretator = inn.OutputClassVisualization(model)
 
     output_image = interpretator(
@@ -214,8 +201,8 @@ def test_occlusion(Model, shape, tile_size, pred):
     sess = model.start_session()
 
     input_image = np.random.uniform(0, 255, size=shape).astype(np.uint8)
-
     interpretator = inn.Occlusion(model)
+
     output_image = interpretator(
         input_image=input_image, pred=pred, tile_size=tile_size
     )
@@ -259,9 +246,10 @@ def test_segmentation_mask(Model, shape, bg_threshold, fg_threshold):
 def test_grad_cam(Model, shape, layer_num, num_classes, guided_backpropagation):
     model = Model()
     sess = model.start_session()
-    input_image = np.random.uniform(0, 255, size=shape).astype(np.uint8)
 
+    input_image = np.random.uniform(0, 255, size=shape).astype(np.uint8)
     interpretator = inn.GradCAM(model)
+
     output_image = interpretator(
         xs_tensor=model.conv_layers[layer_num],
         input_image=input_image,
@@ -283,8 +271,8 @@ def test_gradient_times_input(Model, shape, layer_num):
     sess = model.start_session()
 
     input_image = np.random.uniform(0, 255, size=shape).astype(np.uint8)
-
     interpretator = inn.GradientTimesInput(model)
+
     output_image = interpretator(
         loss_tensor=model.conv_layers[layer_num], input_image=input_image
     )
@@ -306,8 +294,8 @@ def test_saliency_map(Model, shape, xs_layer_num, loss_layer_num):
     sess = model.start_session()
 
     input_image = np.random.uniform(0, 255, size=shape).astype(np.uint8)
-
     interpretator = inn.SaliencyMap(model)
+
     output_image = interpretator(
         xs_tensor=model.conv_layers[xs_layer_num],
         loss_tensor=model.conv_layers[loss_layer_num],

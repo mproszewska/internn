@@ -2,16 +2,13 @@
 Handling Inception 5h Model.
 """
 import tensorflow as tf
-
 import os
 import re
 import sys
 import tarfile
 import zipfile
 
-from pathlib import Path
 from urllib.request import urlretrieve
-from tensorflow.python.framework import tensor_util
 
 from .core import Model
 

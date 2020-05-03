@@ -4,9 +4,6 @@ Handling model.
 import numpy as np
 import tensorflow as tf
 
-import os
-import re
-
 
 class Model:
     """

@@ -1,13 +1,13 @@
 """
 Implementation of Grad-CAM algorithm.
 """
+import cv2
 import numpy as np
 import tensorflow as tf
-import cv2
 
 
 from .core import Interpretation
-from ..common import create_gradient, create_heatmap, scale_to_image, squeeze_into_2D
+from ..common import create_gradient, create_heatmap, squeeze_into_2D
 
 
 class GradCAM(Interpretation):
@@ -42,8 +42,8 @@ class GradCAM(Interpretation):
         guided_backpropagation : bool, optional
             Whether to use guided backpropagation. The default is False.
         squeeze_op : str, optional
-            Operation used to map values on axis into one value. Acceptable values are: "max", "min",
-            "mean". The default is "max". 
+            Operation used to map values on axis into one value. Acceptable values are: "max", 
+            "min", "mean". The default is "max". 
         interpolation : cv2 interpolation type, optional
             Parameter used to resize activations array to input_image's size. The default is 
             cv2.INTER_LANCZOS4.

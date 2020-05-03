@@ -1,12 +1,12 @@
 """
 Implementation of occlusion algorithm.
 """
+import cv2
 import numpy as np
 import tensorflow as tf
-import cv2
 
 from .core import Interpretation
-from ..common import create_heatmap, scale_to_image
+from ..common import create_heatmap
 
 
 class Occlusion(Interpretation):
@@ -44,8 +44,8 @@ class Occlusion(Interpretation):
         colormap : cv2 colorMap, optional
             Colormap for visualizing result. The default is COLORMAP_JET.    
         blend : float between 0.0 and 1.0, optional
-            Blend factor for combining input_image with calculated results. Setting blend to
-            1.0 would result in returning not changed input_image.  
+            Blend factor for combining input_image with calculated results. Setting blend to 1.0
+            would result in returning not changed input_image.  
         loss_norm : int, optional
             Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
         loss_op : str, optional
