@@ -1,5 +1,5 @@
 """
-Class for creating, displaying and saving plots, images.
+Creating, displaying and saving plots, images.
 """
 import cv2
 import matplotlib.pyplot as plt
@@ -8,39 +8,40 @@ import numpy as np
 from datetime import datetime
 from os import path
 from pathlib import Path
+from PIL import Image
 
 
-def create_filename(plot_name, epoch, octave):
+def create_filename(filename):
     """
-    Generates filename from date, epoch, octave and name of plot i.e. image, losses.
+    Generates filename from filename and date.
 
     PARAMETERS
     ----------
-    plot_name : str
-        Plot name, one of: gradient, image.
-    epoch : int
-        Epoch number.
-    octave : int
-        Octave number.
+    filename : str
+        Name of file.
 
     RETURNS
     -------
     str
-        Name for plot.
+        Name filename.
     """
     now = datetime.now()
     now_str = now.strftime("%d-%m-%Y_%H:%M:%S")
-    return "{}_epoch-{}_octave-{}_{}.png".format(now_str, epoch, octave, plot_name)
+    return "{}_{}.png".format(now_str, filename)
 
 
 class Plotter:
+    """
+    Class for displaying and saving images.
+    """
+
     def __init__(self, save_dir="", display=False, save=False):
         self.save_dir = save_dir
         Path(save_dir).mkdir(parents=True, exist_ok=True)
         self.display = display
         self.save = save
 
-    def plot_image(self, image, epoch, octave):
+    def plot_image(self, image, filename):
         """
         Displays and saves array as image. Prints path to saved file.
         
@@ -48,27 +49,24 @@ class Plotter:
         ----------
         image : array-like
             Image to display, save.
-        epoch : int
-            Epoch number included in name of saved file.
-        octave : int
-            Octave number included in name of saved file.
+        filename_suffix : str, optional
+            Suffix to add in filename e.g. with epoch number. The default is "".
         """
-        filename = create_filename("image", epoch, octave)
-
-        image = np.clip(image, 0.0, 255.0)
-        image = image.astype(np.uint8)
+        new_filename = create_filename(filename)
 
         if self.display:
-            cv2.imshow(filename, image)
+            plt.axis("off")
+            plt.imshow(Image.fromarray(image))
+            plt.show()
 
         if self.save:
-            file_path = path.join(self.save_dir, filename)
+            file_path = path.join(self.save_dir, new_filename)
             cv2.imwrite(file_path, image)
             print("Image saved: {}.".format(file_path))
 
         plt.close()
 
-    def plot_losses(self, losses, epoch, octave):
+    def plot_losses(self, losses, title_suffix="", filename_suffix=""):
         """
         Displays and saves losses plot. Prints path to saved file.
         
@@ -76,19 +74,21 @@ class Plotter:
         ----------
         losses : list of numbers
             Losses to plot.
-        epoch : int
-            Epoch number included in name of saved file.
-        octave : int
-            Octave number included in name of saved file.
+        title_suffix : str, optional
+            Suffix to add in plot title e.g. with algorithm name, epoch number. The default is "".
+        filename_suffix : str, optional
+            Suffix to add in filename e.g. with algorithm name, epoch number. The default is "".
         """
-        plt.plot(losses)
-        plt.title("Losses\nepoch: {} octave: {}".format(epoch, octave))
 
         if self.display:
+            plt.plot(losses)
+            plt.title("Losses\n{}".format(title_suffix))
             plt.show()
 
         if self.save:
-            filename = create_filename("losses", epoch, octave)
+            plt.plot(losses)
+            plt.title("Losses\n{}".format(title_suffix))
+            filename = create_filename("losses{}".format(filename_suffix))
             file_path = path.join(self.save_dir, filename)
             plt.savefig(file_path)
             print("Losses plot saved: {}.".format(file_path))
