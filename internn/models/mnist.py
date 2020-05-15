@@ -22,7 +22,7 @@ class MNISTModel(Model):
         if force_creation or not os.path.exists(file_path):
             create_and_save_model(self.model_dir)
 
-        self.graph = tf.compat.v1.get_default_graph()
+        self.graph = tf.Graph()
 
         with self.graph.as_default():
             model = build_model()
@@ -93,14 +93,14 @@ def build_model():
     return tf.keras.models.Sequential(
         [
             tf.keras.layers.Conv2D(
-                28, kernel_size=(3, 3), activation="relu", input_shape=(28, 28, 1)
+                32, kernel_size=(3, 3), activation="relu", input_shape=(28, 28, 1)
             ),
             tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
-            tf.keras.layers.Conv2D(28, (3, 3), activation="relu"),
+            tf.keras.layers.Conv2D(16, (3, 3), activation="relu"),
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(64, activation="relu"),
-            tf.keras.layers.Dropout(0.2),
-            tf.keras.layers.Dense(10, activation="softmax", name="output"),
+            tf.keras.layers.Dense(32, activation="relu"),
+            tf.keras.layers.Dense(10, activation="relu"),
+            tf.keras.layers.Softmax(name="output")
         ]
     )
 
