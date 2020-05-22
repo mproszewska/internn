@@ -1,7 +1,7 @@
 import numpy as np
 
 """
-Implementation of Segmentation Mask with Graph-Cut
+Implementation of Segmentation Map with Graph-Cut
 """
 import cv2
 import maxflow
@@ -10,9 +10,9 @@ from .core import Interpretation
 from ..common import create_heatmap, squeeze_into_2D
 
 
-class SegmentationMask(Interpretation):
+class SegmentationMap(Interpretation):
     """
-    Class with Segmentation Mask with Graph-Cut implementation.
+    Class with Segmentation Map with Graph-Cut implementation.
     """
 
     def __call__(
@@ -22,16 +22,13 @@ class SegmentationMask(Interpretation):
         bg_threshold=0.3,
         fg_threshold=0.95,
         weight_norm=2,
-        weight_op="sum",
         squeeze_op="max",
         interpolation=cv2.INTER_LANCZOS4,
         colormap=cv2.COLORMAP_JET,
-        blend=0.5,
-        loss_norm=2,
-        loss_op="mean",
+        blend=0.0,
     ):
         """
-        Creates Segmentation Mask based od saliency map using Graph-Cut algorithm.
+        Creates Segmentation Map based od saliency map using Graph-Cut algorithm.
 
         Parameters
         ----------
@@ -45,11 +42,8 @@ class SegmentationMask(Interpretation):
             Threshold for background objects. The default is 0.3.
         fg_threshold : float from [0,1], optional
            Threshold for foreground objects. The default is 0.95.
-        weight_norm : int, optional
+        weight_norm : int of "inf" optional
             Power to which input_image value is raised during weight calculation. The default is 2.
-        weight_op : TYPE, optional
-            Operation which combines input_image values during weight calculation. The default is 
-            "sum".
         squeeze_op : str, optional
             Operation used to map values on axis into one value. Acceptable values are: "max", 
             "min", "mean". The default is "max". 
@@ -60,12 +54,7 @@ class SegmentationMask(Interpretation):
             Colormap for visualizing result. The default is COLORMAP_JET.    
         blend : float between 0.0 and 1.0, optional
             Blend factor for combining input_image with calculated results. Setting blend to
-            1.0 would result in returning not changed input_image.   
-        loss_norm : int, optional
-            Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
-        loss_op : str, optional
-            Operation which combines norms of neurons into one value. Acceptable values are "mean",
-             "max", "min", "std".
+            1.0 would result in returning not changed input_image. The default is 0.
 
         Returns
         -------
@@ -73,19 +62,16 @@ class SegmentationMask(Interpretation):
             Result as image.
 
         """
-        if self.__class__.__name__ == "SegmentationMask":
+        if self.__class__.__name__ == "SegmentationMap":
             params = {
                 "class_name": self.__class__.__name__,
                 "bg_threshold": bg_threshold,
                 "fg_threshold": fg_threshold,
                 "weight_norm": weight_norm,
-                "weight_op": weight_op,
                 "squeeze_op": squeeze_op,
                 "interpolation": interpolation,
                 "colormap": colormap,
                 "blend": blend,
-                "loss_norm": loss_norm,
-                "loss_op": loss_op,
             }
             self.reporter.report_parameters(params)
 
@@ -95,7 +81,7 @@ class SegmentationMask(Interpretation):
             saliency_map, bg_threshold, fg_threshold
         )
         segments_classification = self.run_segments_classification(
-            img_classification, input_image, weight_norm, weight_op
+            img_classification, input_image, weight_norm
         )
 
         heatmap = create_heatmap(
@@ -121,22 +107,17 @@ class SegmentationMask(Interpretation):
         return classification
 
     def edge_weight(
-        self, input_image, w, h, w_other, h_other, weight_norm=2, weight_op="sum"
+        self, input_image, w, h, w_other, h_other, weight_norm=2
     ):
         diff = np.absolute(input_image[h, w] - input_image[h_other, w_other])
         normed = np.power(diff, weight_norm)
-        if weight_op == "sum":
-            return 1 / (1 + np.sum(normed))
-        if weight_op == "mean":
-            return 1 / (1 + np.mean(normed))
-        if weight_op == "min":
-            return 1 / (1 + np.min(normed))
-        if weight_op == "max":
+        if weight_norm == "inf":
             return 1 / (1 + np.max(normed))
-        raise ValueError("Invalid weight_op value: {}".format(weight_op))
+        else:
+            return 1 / (1 + np.sum(normed))
 
     def run_segments_classification(
-        self, img_classification, input_image, weight_norm=2, weight_op="sum"
+        self, img_classification, input_image, weight_norm=2
     ):
         num_nodes = int(img_classification.size + 2)
         h_max, w_max = img_classification.shape
@@ -162,21 +143,21 @@ class SegmentationMask(Interpretation):
             h_other, w_other = h + 1, w
             other_id = h_other * w_max + w_other
             weight = self.edge_weight(
-                input_image, w, h, w_other, h_other, weight_norm, weight_op
+                input_image, w, h, w_other, h_other, weight_norm
             )
             graph.add_edge(node_id, other_id, weight, weight)
 
             h_other, w_other = h, w + 1
             other_id = h_other * w_max + w_other
             weight = self.edge_weight(
-                input_image, w, h, w_other, h_other, weight_norm, weight_op
+                input_image, w, h, w_other, h_other, weight_norm
             )
             graph.add_edge(node_id, other_id, weight, weight)
 
             h_other, w_other = h + 1, w + 1
             other_id = h_other * w_max + w_other
             weight = self.edge_weight(
-                input_image, w, h, w_other, h_other, weight_norm, weight_op
+                input_image, w, h, w_other, h_other, weight_norm
             )
             graph.add_edge(node_id, other_id, weight, weight)
 

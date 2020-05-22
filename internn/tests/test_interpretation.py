@@ -217,13 +217,13 @@ def test_occlusion(Model, shape, tile_size, pred):
     [(inn.Inception5hModel, (500, 500, 3)), (inn.MNISTModel, (28, 28, 1))],
 )
 @pytest.mark.parametrize("bg_threshold, fg_threshold", [(0.4, 0.6)])
-def test_segmentation_mask(Model, shape, bg_threshold, fg_threshold):
+def test_segmentation_map(Model, shape, bg_threshold, fg_threshold):
     model = Model()
     sess = model.start_session()
 
     input_image = np.random.uniform(0, 255, size=shape).astype(np.uint8)
     saliency_map = np.random.uniform(-1, 1, size=shape[0:2]).astype(np.uint8)
-    interpretator = inn.SegmentationMask(model)
+    interpretator = inn.SegmentationMap(model)
 
     output_image = interpretator(
         saliency_map=saliency_map,
@@ -289,12 +289,12 @@ def test_gradient_times_input(Model, shape, layer_num):
         (inn.MNISTModel, (28, 28, 1), 0, 1),
     ],
 )
-def test_saliency_map(Model, shape, xs_layer_num, loss_layer_num):
+def test_gradient(Model, shape, xs_layer_num, loss_layer_num):
     model = Model()
     sess = model.start_session()
 
     input_image = np.random.uniform(0, 255, size=shape).astype(np.uint8)
-    interpretator = inn.SaliencyMap(model)
+    interpretator = inn.Gradient(model)
 
     output_image = interpretator(
         xs_tensor=model.conv_layers[xs_layer_num],

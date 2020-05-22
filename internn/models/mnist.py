@@ -22,7 +22,7 @@ class MNISTModel(Model):
         if force_creation or not os.path.exists(file_path):
             create_and_save_model(self.model_dir)
 
-        self.graph = tf.Graph()
+        self.graph = tf.compat.v1.get_default_graph()
 
         with self.graph.as_default():
             model = build_model()
@@ -99,7 +99,7 @@ def build_model():
             tf.keras.layers.Conv2D(16, (3, 3), activation="relu"),
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(32, activation="relu"),
-            tf.keras.layers.Dense(10, activation="relu"),
+            tf.keras.layers.Dense(10),
             tf.keras.layers.Softmax(name="output")
         ]
     )

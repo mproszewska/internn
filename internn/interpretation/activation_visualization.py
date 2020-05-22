@@ -21,7 +21,7 @@ class ActivationVisualization(Interpretation):
         squeeze_op="max",
         interpolation=cv2.INTER_LANCZOS4,
         colormap=cv2.COLORMAP_JET,
-        blend=0.5,
+        blend=0,
     ):
         """
         Visualizes activations by mapping activations into 2D array.
@@ -42,7 +42,7 @@ class ActivationVisualization(Interpretation):
             Colormap for visualizing activations. The default is COLORMAP_JET.    
         blend : float between 0.0 and 1.0, optional
             Blend factor for combining input_image with calculated activations. Setting blend to
-            1.0 would result in returning not changed input_image.         
+            1.0 would result in returning not changed input_image. The default is 0.    
 
         Returns
         -------
@@ -109,7 +109,7 @@ class LayerActivationVisualization(ActivationVisualization):
         squeeze_op="max",
         interpolation=cv2.INTER_LANCZOS4,
         colormap=cv2.COLORMAP_JET,
-        blend=0.5,
+        blend=0,
     ):
         """
         Visualizes activations by mapping activations in layer into 2D array.
@@ -130,7 +130,7 @@ class LayerActivationVisualization(ActivationVisualization):
             Colormap for visualizing activations. The default is COLORMAP_JET.    
         blend : float between 0.0 and 1.0, optional
             Blend factor for combining input_image with calculated activations. Setting blend to
-            1.0 would result in returning not changed input_image.         
+            1.0 would result in returning not changed input_image. The default is 0. 
 
         Returns
         -------

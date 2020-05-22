@@ -9,7 +9,7 @@ from .feature_visualization import (
     OutputClassVisualization,
 )
 from .occlusion import Occlusion
-from .segmentation_mask import SegmentationMask
+from .segmentation_map import SegmentationMap
 from .gradient_times_input import GradientTimesInput
 from .grad_cam import GradCAM
-from .saliency_map import SaliencyMap
+from .gradient import Gradient

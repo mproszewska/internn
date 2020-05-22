@@ -6,10 +6,10 @@ from .interpretation import (
     NeuronVisualization,
     OutputClassVisualization,
     Occlusion,
-    SegmentationMask,
+    SegmentationMap,
     GradientTimesInput,
     GradCAM,
-    SaliencyMap,
+    Gradient,
 )
 from .models import Inception5hModel, MNISTModel
 from .plot import Plotter
