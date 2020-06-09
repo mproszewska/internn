@@ -10,7 +10,6 @@ from pathlib import Path
 from PIL import Image
 
 
-
 def create_filename(filename):
     """
     Generates filename from filename and date.

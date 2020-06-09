@@ -4,7 +4,9 @@ import internn as inn
 
 
 @pytest.mark.parametrize("display", [True, False])
-def test_report_parameters( capsys, display,):
+def test_report_parameters(
+    capsys, display,
+):
     msg = "test=0\n0=test\n"
     reporter = inn.Reporter(display)
     reporter.report_parameters({"test": 0, 0: "test"})

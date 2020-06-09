@@ -8,7 +8,9 @@ from datetime import datetime
 import internn as inn
 
 
-@pytest.mark.parametrize("display", [True, False],)
+@pytest.mark.parametrize(
+    "display", [True, False],
+)
 @pytest.mark.parametrize("save", [True, False])
 def test_plot_image(display, save, capsys):
     save_dir = str(datetime.now())

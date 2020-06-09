@@ -3,8 +3,8 @@ Implementation of Grad-CAM algorithm.
 """
 import cv2
 import numpy as np
+import numpy as np
 import tensorflow as tf
-
 
 from .core import Interpretation
 from ..common import create_gradient, create_heatmap, squeeze_into_2D
@@ -18,9 +18,9 @@ class GradCAM(Interpretation):
     def __call__(
         self,
         xs_tensor,
+        loss_tensor,
         input_image,
-        num_classes=10,
-        guided_backpropagation=False,
+        relu=False,
         squeeze_op="max",
         interpolation=cv2.INTER_LANCZOS4,
         colormap=cv2.COLORMAP_JET,
@@ -29,18 +29,18 @@ class GradCAM(Interpretation):
         loss_op="mean",
     ):
         """
-        Performs Grad-CAM with respect to input_image.
+        Performs Grad-CAM with respect to xs_tensor.
 
         Parameters
         ----------
         xs_tensor : Tensor
             Tensor with respect to which the gradient is calculated.
+        loss_tensor : Tensor
+            Target tensor whose gradient is calculated.
         input_image : ndarray
-            Image on which Grad-CAM is performed. The default is 10.
-        num_classes : int
-            Number of top predicted classes to consider.
-        guided_backpropagation : bool, optional
-            Whether to use guided backpropagation. The default is False.
+            Image on which Grad-CAM is performed.
+        relu : bool, optional
+            Bool that determines if relu is performed on occlusion output. The default is False.
         squeeze_op : str, optional
             Operation used to map values on axis into one value. Acceptable values are: "max", 
             "min", "mean". The default is "max". 
@@ -66,8 +66,7 @@ class GradCAM(Interpretation):
         """
         params = {
             "class_name": self.__class__.__name__,
-            "num_classes": num_classes,
-            "guided_backpropagation": guided_backpropagation,
+            "relu": relu,
             "squeeze_op": squeeze_op,
             "interpolation": interpolation,
             "colormap": colormap,
@@ -77,35 +76,28 @@ class GradCAM(Interpretation):
         }
         self.reporter.report_parameters(params)
 
-        gradient_funcs, weights_func = list(), list()
+        sess = tf.compat.v1.get_default_session()
 
-        weights_tensor = self.model.classify()
+        gradient_func = create_gradient(
+            xs_tensor=xs_tensor,
+            loss_tensor=loss_tensor,
+            loss_norm=loss_norm,
+            loss_op=loss_op,
+        )
 
         feed_dict = self.model.create_feed_dict(input_image)
 
         sess = tf.compat.v1.get_default_session()
-        weights = sess.run(weights_tensor, feed_dict)
-        top_classes = weights.argpartition(len(weights) - num_classes)[-num_classes:]
+        xs, gradient = sess.run([xs_tensor, gradient_func], feed_dict)
+        xs = xs[0]
 
-        for num_class in top_classes:
-            gradient_func = create_gradient(
-                xs_tensor=xs_tensor,
-                loss_tensor=weights_tensor[num_class],
-                loss_norm=loss_norm,
-                loss_op=loss_op,
-                guided_backpropagation=guided_backpropagation,
-            )
-            gradient_funcs.append(gradient_func)
-            weights_func.append(weights_tensor[num_class])
+        grad_cam = np.zeros(shape=gradient.shape[0:2], dtype="float32")
 
-        feed_dict = self.model.create_feed_dict(input_image)
+        for i in range(gradient.shape[2]):
+            grad_cam += xs[:, :, i] * np.mean(gradient[:, :, i])
 
-        sess = tf.compat.v1.get_default_session()
-        gradients, weights = sess.run([gradient_funcs, weights_func], feed_dict)
-
-        grad_cam = np.zeros_like(gradients[0], dtype="float32")
-        for grad, weight in zip(gradients, weights):
-            grad_cam += grad * weight
+        if relu:
+            grad_cam = np.maximum(0, grad_cam)
 
         grad_cam = squeeze_into_2D(grad_cam, op=squeeze_op)
 

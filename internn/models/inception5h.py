@@ -72,7 +72,6 @@ def load_conv_layers(graph):
     for i, layer in enumerate(conv_layers_names):
         layer_name = re.search("(.+?)/conv", layer).group(1)
         conv_layers.append(graph.get_tensor_by_name("{}:0".format(layer_name)))
-        
 
     return conv_layers, conv_layers_names
 

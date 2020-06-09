@@ -213,7 +213,7 @@ class FeatureVisualization(Interpretation):
         sigma=1,
         interpolation=cv2.INTER_LANCZOS4,
         loss_norm=2,
-        loss_op="mean"
+        loss_op="mean",
     ):
         """
         Performs feature visualization on image by maximazing activations in given activation
@@ -287,7 +287,7 @@ class FeatureVisualization(Interpretation):
             "sigma": sigma,
             "interpolation": interpolation,
             "loss_norm": loss_norm,
-            "loss_op": loss_op
+            "loss_op": loss_op,
         }
         self.reporter.report_parameters(params)
 
@@ -313,7 +313,7 @@ class FeatureVisualization(Interpretation):
                 sigma=sigma,
                 interpolation=interpolation,
                 loss_norm=loss_norm,
-                loss_op=loss_op
+                loss_op=loss_op,
             )
 
         if image.shape != input_image.shape:
@@ -340,7 +340,7 @@ class FeatureVisualization(Interpretation):
         sigma=1,
         interpolation=cv2.INTER_LANCZOS4,
         loss_norm=2,
-        loss_op="mean"
+        loss_op="mean",
     ):
         """
         Epoch step of feature visualization.
@@ -427,7 +427,7 @@ class FeatureVisualization(Interpretation):
                 sigma=sigma,
                 interpolation=interpolation,
                 loss_norm=loss_norm,
-                loss_op=loss_op
+                loss_op=loss_op,
             )
 
             height, width = input_image.shape[0:2]
@@ -453,7 +453,7 @@ class FeatureVisualization(Interpretation):
             tiles=tiles,
             interpolation=interpolation,
             loss_norm=loss_norm,
-            loss_op=loss_op
+            loss_op=loss_op,
         )
 
         return output_image
@@ -674,7 +674,7 @@ class LayerVisualization(FeatureVisualization):
         sigma=1,
         interpolation=cv2.INTER_LANCZOS4,
         loss_norm=2,
-        loss_op="mean"
+        loss_op="mean",
     ):
 
         """
@@ -755,7 +755,7 @@ class LayerVisualization(FeatureVisualization):
             sigma=sigma,
             interpolation=interpolation,
             loss_norm=loss_norm,
-            loss_op=loss_op
+            loss_op=loss_op,
         )
 
 
@@ -862,7 +862,7 @@ class NeuronVisualization(FeatureVisualization):
             sigma=sigma,
             interpolation=interpolation,
             loss_norm=loss_norm,
-            loss_op=loss_op
+            loss_op=loss_op,
         )
 
 
@@ -885,7 +885,7 @@ class OutputClassVisualization(NeuronVisualization):
         sigma=1,
         interpolation=cv2.INTER_LANCZOS4,
         loss_norm=2,
-        loss_op="mean"
+        loss_op="mean",
     ):
         """
          Calls FeatureVisuzalization for certain class by calling it on neuron in last the layer.
@@ -971,5 +971,5 @@ class OutputClassVisualization(NeuronVisualization):
             sigma=sigma,
             interpolation=interpolation,
             loss_norm=loss_norm,
-            loss_op=loss_op
+            loss_op=loss_op,
         )

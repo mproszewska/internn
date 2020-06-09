@@ -42,9 +42,7 @@ def activation_loss(activation_tensor, norm=2, op="mean"):
     raise ValueError("Unsupported opperation: {}".format(op))
 
 
-def create_gradient(
-    xs_tensor, loss_tensor, loss_norm=2, loss_op="mean", guided_backpropagation=False,
-):
+def create_gradient(xs_tensor, loss_tensor, loss_norm=2, loss_op="mean"):
     """
     Creates Tensor with gradients and loss.
 
@@ -58,8 +56,6 @@ def create_gradient(
         Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
     loss_op : str, optional
         Operation which combines norms of neurons into one value. Acceptable values are "mean",
-    guided_backpropagation : bool, optional
-        Whether to use guided backpropagation. The default is False.
 
     Returns
     -------
@@ -71,12 +67,6 @@ def create_gradient(
     """
     loss_func = activation_loss(loss_tensor, norm=loss_norm, op=loss_op)
     gradient_func = tf.gradients(ys=loss_func, xs=xs_tensor)[0]
-
-    if guided_backpropagation:
-        gradient_guided = tf.cast(gradient_func > 0, dtype="float32")
-        xs_guided = tf.cast(xs_tensor > 0, dtype="float32")
-        gradient_func = gradient_func * gradient_guided * xs_guided
-
     return gradient_func[0]
 
 
@@ -113,6 +103,7 @@ def create_heatmap(
     if array.shape != input_image.shape:
         height, width = input_image.shape[0:2]
         array = cv2.resize(array, dsize=(width, height), interpolation=interpolation)
+
     if input_image.shape[-1] == 1:
         input_image = input_image.copy()
         input_image = np.tile(input_image, 3)

@@ -2,6 +2,7 @@
 Implementation of algorithm that creates saliency map from gradients.
 """
 import cv2
+import numpy as np
 import tensorflow as tf
 
 from .core import Interpretation
@@ -18,7 +19,7 @@ class Gradient(Interpretation):
         xs_tensor,
         loss_tensor,
         input_image,
-        guided_backpropagation=False,
+        relu=False,
         squeeze_op="max",
         interpolation=cv2.INTER_LANCZOS4,
         colormap=cv2.COLORMAP_JET,
@@ -27,7 +28,7 @@ class Gradient(Interpretation):
         loss_op="mean",
     ):
         """
-        Creates saliency/heatmap based on gradients.
+        Creates saliency map based on gradients.
 
         Parameters
         ----------
@@ -37,8 +38,8 @@ class Gradient(Interpretation):
             Target tensor whose gradient is calculated.
         input_image : ndarray
             Image on which algorithm is performed.
-        guided_backpropagation : bool, optional
-            Whether to use guided backpropagation. The default is False.
+        relu : bool, optional
+            Bool that determines if relu is performed on occlusion output. The default is False.
         squeeze_op : str, optional
             Operation used to map values on axis into one value. Acceptable values are: "max", 
             "min", "mean". The default is "max". 
@@ -65,7 +66,7 @@ class Gradient(Interpretation):
         if self.__class__.__name__ == "SaliencyMap":
             params = {
                 "class_name": self.__class__.__name__,
-                "guided_backpropagation": guided_backpropagation,
+                "relu": relu,
                 "squeeze_op": squeeze_op,
                 "interpolation": interpolation,
                 "colormap": colormap,
@@ -75,14 +76,14 @@ class Gradient(Interpretation):
             }
             self.reporter.report_parameters(params)
 
-        gradient_func = create_gradient(
-            xs_tensor, loss_tensor, loss_norm, loss_op, guided_backpropagation,
-        )
+        gradient_func = create_gradient(xs_tensor, loss_tensor, loss_norm, loss_op,)
 
         feed_dict = self.model.create_feed_dict(input_image)
 
         sess = tf.compat.v1.get_default_session()
         gradient = sess.run(gradient_func, feed_dict)
+        if relu:
+            gradient = np.maximum(0, gradient)
         saliency_map = squeeze_into_2D(gradient, op=squeeze_op)
 
         heatmap = create_heatmap(

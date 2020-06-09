@@ -100,7 +100,7 @@ def build_model():
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(32, activation="relu"),
             tf.keras.layers.Dense(10),
-            tf.keras.layers.Softmax(name="output")
+            tf.keras.layers.Softmax(name="output"),
         ]
     )
 

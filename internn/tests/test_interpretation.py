@@ -4,7 +4,6 @@ import numpy as np
 
 import internn as inn
 
-
 @pytest.mark.parametrize(
     "Model, shape",
     [(inn.Inception5hModel, (200, 100, 3)), (inn.MNISTModel, (28, 28, 1))],
@@ -28,7 +27,7 @@ def test_activation_visualization(Model, shape, squeeze_op):
 )
 @pytest.mark.parametrize(
     "squeeze_op, interpolation, colormap, blend",
-[("max", 1, 3, 0.2), ("mean", 2, 0, 0.9)],
+    [("max", 1, 3, 0.2), ("mean", 2, 0, 0.9)],
 )
 def test_activation_visualization_output(
     Model, shape, layer_num, squeeze_op, interpolation, colormap, blend
@@ -89,7 +88,9 @@ def test_layer_activation_visualization(Model, shape, layer_num):
     sess.close()
 
 
-@pytest.mark.parametrize("Model, shape, layer_num", [(inn.Inception5hModel, (100, 100, 3), 20)],)
+@pytest.mark.parametrize(
+    "Model, shape, layer_num", [(inn.Inception5hModel, (50, 50, 3), 10)],
+)
 @pytest.mark.parametrize("tiles", ["shift", "roll"])
 @pytest.mark.parametrize("gradient_ascent", ["normal", "blurred", "smooth"])
 def test_feature_visualization(Model, shape, layer_num, tiles, gradient_ascent):
@@ -113,7 +114,9 @@ def test_feature_visualization(Model, shape, layer_num, tiles, gradient_ascent):
     sess.close()
 
 
-@pytest.mark.parametrize("Model, shape, layer_num", [(inn.MNISTModel, (28, 28, 1), 1)],)
+@pytest.mark.parametrize(
+    "Model, shape, layer_num", [(inn.MNISTModel, (28, 28, 1), 1)],
+)
 @pytest.mark.parametrize("tiles", ["roll"])
 def test_mnist_feature_visualization(Model, shape, layer_num, tiles):
     model = Model()
@@ -137,12 +140,14 @@ def test_mnist_feature_visualization(Model, shape, layer_num, tiles):
 
 
 @pytest.mark.parametrize("Model", [inn.Inception5hModel])
-@pytest.mark.parametrize("layer_name", ["mixed4e_3x3_pre_relu/conv", "conv2d2_pre_relu/conv"])
+@pytest.mark.parametrize(
+    "layer_name", ["mixed4e_3x3_pre_relu/conv", "conv2d2_pre_relu/conv"]
+)
 def test_layer_visualization(Model, layer_name):
     model = Model()
     sess = model.start_session()
 
-    input_image = np.random.uniform(0, 255, size=(100, 100, 3)).astype(np.uint8)
+    input_image = np.random.uniform(0, 255, size=(50, 50, 3)).astype(np.uint8)
     interpretator = inn.LayerVisualization(model)
 
     output_image = interpretator(
@@ -155,7 +160,9 @@ def test_layer_visualization(Model, layer_name):
 
 
 @pytest.mark.parametrize("Model", [inn.Inception5hModel])
-@pytest.mark.parametrize("layer_name", ["mixed4e_3x3_pre_relu/conv", "conv2d2_pre_relu/conv"])
+@pytest.mark.parametrize(
+    "layer_name", ["mixed4e_3x3_pre_relu/conv", "conv2d2_pre_relu/conv"]
+)
 @pytest.mark.parametrize("neuron_num", [1, 50])
 def test_neuron_visualization(Model, layer_name, neuron_num):
     model = Model()
@@ -214,7 +221,7 @@ def test_occlusion(Model, shape, tile_size, pred):
 
 @pytest.mark.parametrize(
     "Model, shape",
-    [(inn.Inception5hModel, (500, 500, 3)), (inn.MNISTModel, (28, 28, 1))],
+    [(inn.Inception5hModel, (300, 300, 3)), (inn.MNISTModel, (28, 28, 1))],
 )
 @pytest.mark.parametrize("bg_threshold, fg_threshold", [(0.4, 0.6)])
 def test_segmentation_map(Model, shape, bg_threshold, fg_threshold):
@@ -236,14 +243,12 @@ def test_segmentation_map(Model, shape, bg_threshold, fg_threshold):
     assert not np.array_equal(output_image, input_image)
     sess.close()
 
-
 @pytest.mark.parametrize(
-    "Model, shape, layer_num",
-    [(inn.Inception5hModel, (200, 200, 3), 40), (inn.MNISTModel, (28, 28, 1), 1)],
+    "Model, shape, layer_num, loss_layer_num",
+    [(inn.Inception5hModel, (100, 100, 3), 40, -4), (inn.MNISTModel, (28, 28, 1), 1, -1)],
 )
-@pytest.mark.parametrize("num_classes", [5, 1])
-@pytest.mark.parametrize("guided_backpropagation", [True, False])
-def test_grad_cam(Model, shape, layer_num, num_classes, guided_backpropagation):
+@pytest.mark.parametrize("relu", [True, False])
+def test_grad_cam(Model, shape, layer_num, loss_layer_num, relu):
     model = Model()
     sess = model.start_session()
 
@@ -252,9 +257,9 @@ def test_grad_cam(Model, shape, layer_num, num_classes, guided_backpropagation):
 
     output_image = interpretator(
         xs_tensor=model.conv_layers[layer_num],
+        loss_tensor=model.conv_layers[loss_layer_num],
         input_image=input_image,
-        num_classes=num_classes,
-        guided_backpropagation=guided_backpropagation,
+        relu=relu,
     )
 
     assert output_image.shape[0:2] == input_image.shape[0:2]
@@ -274,7 +279,9 @@ def test_gradient_times_input(Model, shape, layer_num):
     interpretator = inn.GradientTimesInput(model)
 
     output_image = interpretator(
-        loss_tensor=model.conv_layers[layer_num], input_image=input_image
+        xs_tensor=model.input,
+        loss_tensor=model.conv_layers[layer_num],
+        input_image=input_image,
     )
 
     assert output_image.shape[0:2] == input_image.shape[0:2]
@@ -285,7 +292,7 @@ def test_gradient_times_input(Model, shape, layer_num):
 @pytest.mark.parametrize(
     "Model, shape, xs_layer_num, loss_layer_num",
     [
-        (inn.Inception5hModel, (200, 200, 3), 20, 40),
+        (inn.Inception5hModel, (100, 100, 3), 20, 40),
         (inn.MNISTModel, (28, 28, 1), 0, 1),
     ],
 )

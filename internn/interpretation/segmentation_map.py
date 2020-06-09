@@ -106,9 +106,7 @@ class SegmentationMap(Interpretation):
         classification = 0.5 * (not_bg_class.astype("int16") + fg_class.astype("int16"))
         return classification
 
-    def edge_weight(
-        self, input_image, w, h, w_other, h_other, weight_norm=2
-    ):
+    def edge_weight(self, input_image, w, h, w_other, h_other, weight_norm=2):
         diff = np.absolute(input_image[h, w] - input_image[h_other, w_other])
         normed = np.power(diff, weight_norm)
         if weight_norm == "inf":
@@ -142,23 +140,17 @@ class SegmentationMap(Interpretation):
 
             h_other, w_other = h + 1, w
             other_id = h_other * w_max + w_other
-            weight = self.edge_weight(
-                input_image, w, h, w_other, h_other, weight_norm
-            )
+            weight = self.edge_weight(input_image, w, h, w_other, h_other, weight_norm)
             graph.add_edge(node_id, other_id, weight, weight)
 
             h_other, w_other = h, w + 1
             other_id = h_other * w_max + w_other
-            weight = self.edge_weight(
-                input_image, w, h, w_other, h_other, weight_norm
-            )
+            weight = self.edge_weight(input_image, w, h, w_other, h_other, weight_norm)
             graph.add_edge(node_id, other_id, weight, weight)
 
             h_other, w_other = h + 1, w + 1
             other_id = h_other * w_max + w_other
-            weight = self.edge_weight(
-                input_image, w, h, w_other, h_other, weight_norm
-            )
+            weight = self.edge_weight(input_image, w, h, w_other, h_other, weight_norm)
             graph.add_edge(node_id, other_id, weight, weight)
 
         graph.maxflow()

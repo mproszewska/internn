@@ -2,10 +2,11 @@
 Implementation of gradient*input algorithm.
 """
 import cv2
+import numpy as np
 import tensorflow as tf
 
 from .core import Interpretation
-from ..common import create_gradient, create_heatmap
+from ..common import create_gradient, create_heatmap, squeeze_into_2D
 
 
 class GradientTimesInput(Interpretation):
@@ -15,9 +16,11 @@ class GradientTimesInput(Interpretation):
 
     def __call__(
         self,
+        xs_tensor,
         loss_tensor,
         input_image,
-        guided_backpropagation=False,
+        relu=False,
+        squeeze_op="max",
         interpolation=cv2.INTER_LANCZOS4,
         colormap=cv2.COLORMAP_JET,
         blend=0.5,
@@ -29,12 +32,17 @@ class GradientTimesInput(Interpretation):
 
         Parameters
         ----------
+        xs_tensor : Tensor
+            Tensor with respect to which the gradient is calculated.
         loss_tensor : Tensor
             Target tensor whose gradient is calculated.
         input_image : ndarray
             Image on which gradient*input is performed.
-        guided_backpropagation : bool, optional
-            Whether to use guided backpropagation. The default is False.
+        relu : bool, optional
+            Bool that determines if relu is performed on occlusion output. The default is False.
+        squeeze_op : str, optional
+             Operation used to map values on axis into one value. Acceptable values are: "max", 
+            "min", "mean". The default is "max". 
         interpolation : cv2 interpolation type, optional
             Parameter used to resize result to input_image's size. The default is 
             cv2.INTER_LANCZOS4.
@@ -57,7 +65,7 @@ class GradientTimesInput(Interpretation):
         """
         params = {
             "class_name": self.__class__.__name__,
-            "guided_backpropagation": guided_backpropagation,
+            "relu": relu,
             "interpolation": interpolation,
             "colormap": colormap,
             "blend": blend,
@@ -67,19 +75,23 @@ class GradientTimesInput(Interpretation):
         self.reporter.report_parameters(params)
 
         gradient_func = create_gradient(
-            xs_tensor=self.model.input,
+            xs_tensor=xs_tensor,
             loss_tensor=loss_tensor,
             loss_norm=loss_norm,
             loss_op=loss_op,
-            guided_backpropagation=guided_backpropagation,
         )
 
         feed_dict = self.model.create_feed_dict(input_image)
 
         sess = tf.compat.v1.get_default_session()
-        gradient = sess.run(gradient_func, feed_dict)
+        xs, gradient = sess.run([xs_tensor, gradient_func], feed_dict)
+        xs = xs[0]
 
-        gradient_input = gradient * input_image.astype("float32")
+        gradient_input = gradient * xs.astype("float32")
+        if relu:
+            gradient_input = np.maximum(0, gradient_input)
+
+        gradient_input = squeeze_into_2D(gradient_input, op=squeeze_op)
 
         heatmap = create_heatmap(
             gradient_input,
