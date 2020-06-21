@@ -10,7 +10,7 @@ from .core import Interpretation
 from ..common import activation_loss
 
 
-def normalize_gradient(gradient):
+def normalize_gradient(gradient, clip_grad_percentile=0.1):
     """
     Normalizes gradient based on its std.
 
@@ -18,6 +18,8 @@ def normalize_gradient(gradient):
     ----------
     gradient : Tensor
         Initial gradient.
+    clip_grad_percentile : float
+        Percentile of smaller values that will be clipped. The default is 0.1.
 
     RETURNS
     -------
@@ -26,10 +28,16 @@ def normalize_gradient(gradient):
         
     """
     gradient = np.nan_to_num(gradient) / (np.nanstd(gradient) + 1e-8)
+    if clip_grad_percentile > 0:
+        grad_abs = np.absolute(gradient)
+        bound = np.percentile(grad_abs, q=clip_grad_percentile)
+        gradient[grad_abs < bound] = 0
     return gradient
 
 
-def gradient_ascent_normalized(image, gradient, step_size=2.0):
+def gradient_ascent_normalized(
+    image, gradient, clip_grad_percentile=0.1, step_size=2.0
+):
     """
     Perfoms standard gradinet ascent on image with normalization of gradient.
 
@@ -39,6 +47,8 @@ def gradient_ascent_normalized(image, gradient, step_size=2.0):
         Array that represents image.
     gradient : ndarray
         Array with calculated gradients.
+    clip_grad_percentile : float
+        Percentile of smaller values that will be clipped. The default is 0.1.
     step_size : float, optional
         Size of gradient ascent step, similar to learning rate. The default is 2.0.
 
@@ -48,11 +58,13 @@ def gradient_ascent_normalized(image, gradient, step_size=2.0):
         Updated image.
         
     """
-    image += normalize_gradient(gradient) * step_size
+    image += normalize_gradient(gradient, clip_grad_percentile) * step_size
     return image
 
 
-def gradient_ascent_blurred(image, gradient, step_size=2.0, grad_sigma=1.0):
+def gradient_ascent_blurred(
+    image, gradient, clip_grad_percentile=0.1, step_size=2.0, grad_sigma=1.0
+):
     """
     Perfoms gradinet ascent on image with blurred, normalized gradient.
 
@@ -62,6 +74,8 @@ def gradient_ascent_blurred(image, gradient, step_size=2.0, grad_sigma=1.0):
         Array that represents image.
     gradient : ndarray
         Array with calculated gradients.
+    clip_grad_percentile : float
+        Percentile of smaller values that will be clipped. The default is 0.1.
     step_size : float, optional
         Size of gradient ascent step, similar to learning rate. The default is 2.0.
     grad_sigma : float, optional
@@ -74,11 +88,18 @@ def gradient_ascent_blurred(image, gradient, step_size=2.0, grad_sigma=1.0):
         
     """
     gradient_blurred = cv2.GaussianBlur(src=gradient, ksize=(1, 1), sigmaX=grad_sigma)
-    return gradient_ascent_normalized(image, gradient_blurred, step_size)
+    return gradient_ascent_normalized(
+        image, gradient_blurred, clip_grad_percentile, step_size
+    )
 
 
 def gradient_ascent_smooth(
-    image, gradient, step, step_size=2.0, grad_sigma=(0.15, 0.5)
+    image,
+    gradient,
+    step,
+    clip_grad_percentile=0.1,
+    step_size=2.0,
+    grad_sigma=(0.15, 0.5),
 ):
     """
     Perfoms gradinet ascent on image with new gradient created by adding initial gradient 3 times,
@@ -92,6 +113,8 @@ def gradient_ascent_smooth(
         Array with calculated gradients.
     step : int
         Step number used to calculate gaussian blur sigma specifically for this step.
+    clip_grad_percentile : float
+        Percentile of smaller values that will be clipped. The default is 0.1.
     step_size : float, optional
         Size of gradient ascent step, similar to learning rate. The default is 2.0.
     grad_sigma : typle with two floats, optional
@@ -107,12 +130,15 @@ def gradient_ascent_smooth(
     alpha, const, factors = grad_sigma
     sigma = alpha * step + const
     smooth_gradient = np.zeros_like(gradient)
+    
     for factor in [0.5, 1.0, 2.0]:
-        smooth_gradient += cv2.GaussianBlur(
-            src=gradient, ksize=(1, 1), sigmaX=sigma * factor
-        )
+        blur =  cv2.GaussianBlur(src=gradient, ksize=(1, 1), sigmaX=sigma * factor)
+        if len(blur.shape) == 2: blur = np.expand_dims(blur, axis=2)
+        smooth_gradient += blur
 
-    return gradient_ascent_normalized(image, smooth_gradient, step_size)
+    return gradient_ascent_normalized(
+        image, smooth_gradient, clip_grad_percentile, step_size
+    )
 
 
 def random_roll(array):
@@ -204,15 +230,16 @@ class FeatureVisualization(Interpretation):
         steps_per_octave=10,
         step_size=2.0,
         tile_size=512,
-        tiles="shift",
+        tiles=None,
         gradient_ascent="normal",
+        clip_grad_percentile=0.1,
         grad_sigma=None,
         octave_scale=0.7,
         blend=0.2,
         ksize=(1, 1),
         sigma=1,
         interpolation=cv2.INTER_LANCZOS4,
-        loss_norm=2,
+        loss_abs=False,
         loss_op="mean",
     ):
         """
@@ -237,10 +264,12 @@ class FeatureVisualization(Interpretation):
             Size of tile, so that bigger images are splitted into tiles. Tile size can be modified,
             so that the last tile is not much smaller. The default is 512.
         tiles : str, optional
-            Way of obtaining tiles. Accepted values are: "shift" and "roll". The default is "shift".
+            Way of obtaining tiles. Accepted values are: None, "shift" and "roll". The default is None.
         gradient_ascent : str, optional
             Gradient ascent version. Accepted values are: "normal", "blurred", "smooth". The 
             default is "normal".
+        clip_grad_percentile : float
+            Percentile of smaller values that will be clipped. The default is 0.1.
         grad_sigma : None, float or tuple of two floats, optional
             Sigma parameter in gaussian blur performed on calculated gradient. If None, it is equal
             1 for "blurred" and (0.15, 0.5) for "smooth".
@@ -257,8 +286,9 @@ class FeatureVisualization(Interpretation):
         interpolation : cv2 interpolation type, optional
             Parameter for gaussian blur performed on input image in octave. The default is 
             cv2.INTER_LANCZOS4.
-        loss_norm : int, optional
-            Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
+        loss_abs : bool, optional
+            Determines if activation values or their absolute values should be combined. The default is
+            False.
         loss_op : str, optional
             Operation which combines norms of neurons into one value. Acceptable values are "mean",
             "max", "min", "std".
@@ -280,13 +310,14 @@ class FeatureVisualization(Interpretation):
             "tile_size": tile_size,
             "tiles": tiles,
             "gradient_ascent": gradient_ascent,
+            "clip_grad_percentile": clip_grad_percentile,
             "grad_sigma": grad_sigma,
             "octave_scale": octave_scale,
             "blend": blend,
             "ksize": ksize,
             "sigma": sigma,
             "interpolation": interpolation,
-            "loss_norm": loss_norm,
+            "loss_abs": loss_abs,
             "loss_op": loss_op,
         }
         self.reporter.report_parameters(params)
@@ -312,7 +343,7 @@ class FeatureVisualization(Interpretation):
                 ksize=ksize,
                 sigma=sigma,
                 interpolation=interpolation,
-                loss_norm=loss_norm,
+                loss_abs=loss_abs,
                 loss_op=loss_op,
             )
 
@@ -331,15 +362,16 @@ class FeatureVisualization(Interpretation):
         steps_per_octave=10,
         step_size=2.0,
         tile_size=512,
-        tiles="shift",
+        tiles=None,
         gradient_ascent="normal",
+        clip_grad_percentile=0.1,
         grad_sigma=None,
         octave_scale=0.7,
         blend=0.2,
         ksize=(1, 1),
         sigma=1,
         interpolation=cv2.INTER_LANCZOS4,
-        loss_norm=2,
+        loss_abs=False,
         loss_op="mean",
     ):
         """
@@ -365,10 +397,12 @@ class FeatureVisualization(Interpretation):
             Size of tile, so that bigger images are splitted into tiles. Tile size can be modified,
             so that the last tile is not much smaller. The default is 512.
         tiles : str, optional
-            Way of obtaining tiles. Accepted values are: "shift" and "roll". The default is "shift".
+            Way of obtaining tiles. Accepted values are: None, "shift" and "roll". The default is None.
         gradient_ascent : str, optional
             Gradient ascent version. Accepted values are: "normal", "blurred", "smooth". The 
             default is "normal".
+        clip_grad_percentile : float
+            Percentile of smaller values that will be clipped. The default is 0.1.
         grad_sigma : float or tuple of two floats, optional
             Sigma parameter in gaussian blur performed on calculated gradient. If None, it is equal
             1 for "blurred" and (0.15, 0.5) for "smooth".
@@ -385,8 +419,9 @@ class FeatureVisualization(Interpretation):
         interpolation : cv2 interpolation type, optional
             Parameter for gaussian blur performed on input image in octave. The default is 
             cv2.INTER_LANCZOS4.
-        loss_norm : int, optional
-            Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
+        loss_abs : bool, optional
+            Determines if activation values or their absolute values should be combined. The
+            default is False.
         loss_op : str, optional
             Operation which combines norms of neurons into one value. Acceptable values are "mean",
             "max", "min", "std".
@@ -397,9 +432,7 @@ class FeatureVisualization(Interpretation):
             Input image that maximizes activations in given tensor.
             
         """
-
         if num_octaves_per_epoch > 0:
-
             image_blurred = cv2.GaussianBlur(src=input_image, ksize=ksize, sigmaX=sigma)
 
             new_height = int(image_blurred.shape[0] * octave_scale)
@@ -426,7 +459,7 @@ class FeatureVisualization(Interpretation):
                 ksize=ksize,
                 sigma=sigma,
                 interpolation=interpolation,
-                loss_norm=loss_norm,
+                loss_abs=loss_abs,
                 loss_op=loss_op,
             )
 
@@ -452,7 +485,7 @@ class FeatureVisualization(Interpretation):
             gradient_ascent=gradient_ascent,
             tiles=tiles,
             interpolation=interpolation,
-            loss_norm=loss_norm,
+            loss_abs=loss_abs,
             loss_op=loss_op,
         )
 
@@ -468,11 +501,12 @@ class FeatureVisualization(Interpretation):
         steps_per_octave=10,
         step_size=2.0,
         tile_size=512,
-        tiles="shift",
+        tiles=None,
         gradient_ascent="normal",
+        clip_grad_percentile=0.1,
         grad_sigma=None,
         interpolation=cv2.INTER_LANCZOS4,
-        loss_norm=2,
+        loss_abs=False,
         loss_op="mean",
     ):
         """
@@ -498,17 +532,20 @@ class FeatureVisualization(Interpretation):
             Size of tile, so that bigger images are splitted into tiles. Tile size can be modified,
             so that the last tile is not much smaller. The default is 512.
         tiles : str, optional
-            Way of obtaining tiles. Accepted values are: "shift" and "roll". The default is "shift".
+            Way of obtaining tiles. Accepted values are: None, "shift" and "roll". The default is None.
         gradient_ascent : str, optional
             Gradient ascent version. Accepted values are: "normal", "blurred", "smooth". The 
             default is "normal".
+        clip_grad_percentile : float
+            Percentile of smaller values that will be clipped. The default is 0.1.
         grad_sigma : float or tuple of two floats, optional
             Sigma parameter in gaussian blur performed on calculated gradient. If None, it is equal
             1 for "blurred" and (0.15, 0.5) for "smooth".
         interpolation : cv2 interpolation type, optional
             Parameter used to resize created image to output_image_dsize.
-        loss_norm : int, optional
-            Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
+        loss_abs : bool, optional
+            Determines if activation values or their absolute values should be combined. The 
+            default is False.
         loss_op : str, optional
             Operation which combines norms of neurons into one value. Acceptable values are "mean",
             "max", "min", "std".
@@ -525,31 +562,35 @@ class FeatureVisualization(Interpretation):
             
         """
         image = input_image.copy().astype(np.float64)
-
-        loss_func = activation_loss(feature_tensor, norm=loss_norm, op=loss_op)
+        loss_func = activation_loss(feature_tensor, abs=loss_abs, op=loss_op)
         losses = list()
 
         for step in range(steps_per_octave):
-
             loss_result, gradient_result = self.tiled_gradient(
                 loss_func=loss_func, image=image, tile_size=tile_size, tiles=tiles
             )
-
             losses.append(loss_result)
 
             if gradient_ascent == "normal":
-                image = gradient_ascent_normalized(image, gradient_result, step_size)
+                image = gradient_ascent_normalized(
+                    image, gradient_result, clip_grad_percentile, step_size
+                )
             elif gradient_ascent == "blurred":
                 grad_sigma = 1.0 if grad_sigma is None else grad_sigma
                 image = gradient_ascent_blurred(
-                    image, gradient_result, step_size, grad_sigma
+                    image, gradient_result, clip_grad_percentile, step_size, grad_sigma
                 )
             elif gradient_ascent == "smooth":
                 grad_sigma = (
                     (4.0, 0.5, [0.5, 1.0, 2.0]) if grad_sigma is None else grad_sigma
                 )
                 image = gradient_ascent_smooth(
-                    image, gradient_result, step, step_size, grad_sigma
+                    image,
+                    gradient_result,
+                    step,
+                    clip_grad_percentile,
+                    step_size,
+                    grad_sigma,
                 )
             else:
                 raise ValueError(
@@ -567,6 +608,7 @@ class FeatureVisualization(Interpretation):
 
         image_to_plot = image.clip(0, 255)
         image_to_plot = image_to_plot.astype(np.uint8)
+
         image_to_plot = cv2.resize(
             image_to_plot, dsize=output_image_size, interpolation=interpolation
         )
@@ -574,7 +616,7 @@ class FeatureVisualization(Interpretation):
 
         return image
 
-    def tiled_gradient(self, loss_func, image, tile_size=512, tiles="shift"):
+    def tiled_gradient(self, loss_func, image, tile_size=512, tiles=None):
         """
         Divides image into smaller tiles and performs gradient on each of them.
 
@@ -588,7 +630,7 @@ class FeatureVisualization(Interpretation):
             Size of tile, so that bigger images are splitted into tiles. Tile size can be modified,
             so that the last tile is not much smaller. The default is 512.
         tiles : str, optional
-            Way of obtaining tiles. Accepted values are: "shift" and "roll". The default is "shift".
+            Way of obtaining tiles. Accepted values are: None, "shift" and "roll". The default is None.
 
         RAISES
         ------
@@ -620,6 +662,8 @@ class FeatureVisualization(Interpretation):
         elif tiles == "shift":
             start_height = int(np.random.uniform(-0.75, -0.25) * tile_height)
             start_width = int(np.random.uniform(-0.75, -0.25) * tile_width)
+        elif tiles is None:
+            start_height, start_width = 0, 0
         else:
             raise ValueError("Unsupported tiles value: {}.".format(tiles))
 
@@ -665,7 +709,7 @@ class LayerVisualization(FeatureVisualization):
         steps_per_octave=10,
         step_size=2.0,
         tile_size=512,
-        tiles="shift",
+        tiles=None,
         gradient_ascent="normal",
         grad_sigma=None,
         octave_scale=0.7,
@@ -673,7 +717,7 @@ class LayerVisualization(FeatureVisualization):
         ksize=(1, 1),
         sigma=1,
         interpolation=cv2.INTER_LANCZOS4,
-        loss_norm=2,
+        loss_abs=False,
         loss_op="mean",
     ):
 
@@ -698,7 +742,7 @@ class LayerVisualization(FeatureVisualization):
             Size of tile, so that bigger images are splitted into tiles. Tile size can be modified,
             so that the last tile is not much smaller. The default is 512.
         tiles : str, optional
-            Way of obtaining tiles. Accepted values are: "shift" and "roll". The default is "shift".
+            Way of obtaining tiles. Accepted values are: None, "shift" and "roll". The default is None.
         gradient_ascent : str, optional
             Gradient ascent version. Accepted values are: "normal", "blurred", "smooth". The 
             default is "normal".
@@ -718,8 +762,9 @@ class LayerVisualization(FeatureVisualization):
         interpolation : cv2 interpolation type, optional
             Parameter for gaussian blur performed on input image in octave. The default is 
             cv2.INTER_LANCZOS4.
-        loss_norm : int, optional
-            Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
+        loss_abs : bool, optional
+            Determines if activation values or their absolute values should be combined. The 
+            default is False.
         loss_op : str, optional
             Operation which combines norms of neurons into one value. Acceptable values are "mean",
             "max", "min", "std".
@@ -754,7 +799,7 @@ class LayerVisualization(FeatureVisualization):
             ksize=ksize,
             sigma=sigma,
             interpolation=interpolation,
-            loss_norm=loss_norm,
+            loss_abs=loss_abs,
             loss_op=loss_op,
         )
 
@@ -770,7 +815,7 @@ class NeuronVisualization(FeatureVisualization):
         steps_per_octave=10,
         step_size=2.0,
         tile_size=512,
-        tiles="shift",
+        tiles=None,
         gradient_ascent="normal",
         grad_sigma=None,
         octave_scale=0.7,
@@ -778,7 +823,7 @@ class NeuronVisualization(FeatureVisualization):
         ksize=(1, 1),
         sigma=1,
         interpolation=cv2.INTER_LANCZOS4,
-        loss_norm=2,
+        loss_abs=False,
         loss_op="mean",
     ):
         """
@@ -804,7 +849,7 @@ class NeuronVisualization(FeatureVisualization):
             Size of tile, so that bigger images are splitted into tiles. Tile size can be modified,
             so that the last tile is not much smaller. The default is 512.
         tiles : str, optional
-            Way of obtaining tiles. Accepted values are: "shift" and "roll". The default is "shift".
+            Way of obtaining tiles. Accepted values are: None, "shift" and "roll". The default is None.
         gradient_ascent : str, optional
             Gradient ascent version. Accepted values are: "normal", "blurred", "smooth". The 
             default is "normal".
@@ -824,8 +869,9 @@ class NeuronVisualization(FeatureVisualization):
         interpolation : cv2 interpolation type, optional
             Parameter for gaussian blur performed on input image in octave. The default is 
             cv2.INTER_LANCZOS4.
-        loss_norm : int, optional
-            Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
+        loss_abs : bool, optional
+            Determines if activation values or their absolute values should be combined. The 
+            default is False.
         loss_op : str, optional
             Operation which combines norms of neurons into one value. Acceptable values are "mean",
            "max", "min", "std".
@@ -861,7 +907,7 @@ class NeuronVisualization(FeatureVisualization):
             ksize=ksize,
             sigma=sigma,
             interpolation=interpolation,
-            loss_norm=loss_norm,
+            loss_abs=loss_abs,
             loss_op=loss_op,
         )
 
@@ -876,7 +922,7 @@ class OutputClassVisualization(NeuronVisualization):
         steps_per_octave=10,
         step_size=2.0,
         tile_size=512,
-        tiles="shift",
+        tiles=None,
         gradient_ascent="normal",
         grad_sigma=None,
         octave_scale=0.7,
@@ -884,7 +930,7 @@ class OutputClassVisualization(NeuronVisualization):
         ksize=(1, 1),
         sigma=1,
         interpolation=cv2.INTER_LANCZOS4,
-        loss_norm=2,
+        loss_abs=False,
         loss_op="mean",
     ):
         """
@@ -908,7 +954,7 @@ class OutputClassVisualization(NeuronVisualization):
              Size of tile, so that bigger images are splitted into tiles. Tile size can be modified,
              so that the last tile is not much smaller. The default is 512.
          tiles : str, optional
-             Way of obtaining tiles. Accepted values are: "shift" and "roll". The default is "shift".
+             Way of obtaining tiles. Accepted values are: None, "shift" and "roll". The default is None.
          gradient_ascent : str, optional
              Gradient ascent version. Accepted values are: "normal", "blurred", "smooth". The 
              default is "normal".
@@ -928,8 +974,9 @@ class OutputClassVisualization(NeuronVisualization):
          interpolation : cv2 interpolation type, optional
              Parameter for gaussian blur performed on input image in octave. The default is 
              cv2.INTER_LANCZOS4.
-         loss_norm : int, optional
-             Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
+         loss_abs : bool, optional
+            Determines if activation values or their absolute values should be combined. The 
+            default is False.
          loss_op : str, optional
              Operation which combines norms of neurons into one value. Acceptable values are "mean",
             "max", "min", "std".
@@ -970,6 +1017,6 @@ class OutputClassVisualization(NeuronVisualization):
             ksize=ksize,
             sigma=sigma,
             interpolation=interpolation,
-            loss_norm=loss_norm,
+            loss_abs=loss_abs,
             loss_op=loss_op,
         )

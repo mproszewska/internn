@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 
 
-def activation_loss(activation_tensor, norm=2, op="mean"):
+def activation_loss(activation_tensor, abs=False, op="mean"):
     """
     Returns norm of neuron activations in given tensor.
 
@@ -14,8 +14,8 @@ def activation_loss(activation_tensor, norm=2, op="mean"):
     ----------
     activation_tensor : Tensor
         Tensor that contains neurons which norm is calculated.
-    norm : int, optional
-        Positive integer. Norm of neuron. The default is 2 which is euclidean norm.
+    abs : bool, optional
+        Determines if activation values or their absolute values should be combined.
     op : str, optional
         Operation which combines norms of neurons into one value. Acceptable values are: "mean",
         "max", "min", "std". The default is "mean".
@@ -23,12 +23,11 @@ def activation_loss(activation_tensor, norm=2, op="mean"):
     RETURNS
     -------
     float
-        Norm of neuron activations.
+        Value that represents neurons activations.
     
     """
-    norm = tf.constant([norm], dtype=activation_tensor.dtype)
-    activation_tensor = tf.math.abs(activation_tensor)
-    activation_tensor = tf.math.pow(x=activation_tensor, y=norm)
+    if abs:
+        activation_tensor = tf.math.abs(activation_tensor)
 
     if op == "mean":
         return tf.math.reduce_mean(input_tensor=activation_tensor)
@@ -42,7 +41,7 @@ def activation_loss(activation_tensor, norm=2, op="mean"):
     raise ValueError("Unsupported opperation: {}".format(op))
 
 
-def create_gradient(xs_tensor, loss_tensor, loss_norm=2, loss_op="mean"):
+def create_gradient(xs_tensor, loss_tensor, loss_abs=False, loss_op="mean"):
     """
     Creates Tensor with gradients and loss.
 
@@ -52,8 +51,9 @@ def create_gradient(xs_tensor, loss_tensor, loss_norm=2, loss_op="mean"):
         Tensor with respect to which the gradient is calculated.
     loss_tensor : Tensor
         Tensor which activations determine loss.
-    loss_norm : int, optional
-        Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
+    loss_abs : bool, optional
+        Determines if activation values or their absolute values should be combined. The default is
+        False.
     loss_op : str, optional
         Operation which combines norms of neurons into one value. Acceptable values are "mean",
 
@@ -65,7 +65,7 @@ def create_gradient(xs_tensor, loss_tensor, loss_norm=2, loss_op="mean"):
         Tensor with loss.
 
     """
-    loss_func = activation_loss(loss_tensor, norm=loss_norm, op=loss_op)
+    loss_func = activation_loss(loss_tensor, abs=loss_abs, op=loss_op)
     gradient_func = tf.gradients(ys=loss_func, xs=xs_tensor)[0]
     return gradient_func[0]
 

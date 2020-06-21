@@ -10,15 +10,15 @@ from ..common import activation_loss, squeeze_into_2D, scale_to_image
     "Model, size",
     [(inn.Inception5hModel, (200, 200, 3)), (inn.MNISTModel, (28, 28, 1))],
 )
-@pytest.mark.parametrize("norm, op", [(2, "max"), (1, "mean")])
-def test_activation_loss(Model, size, norm, op):
+@pytest.mark.parametrize("abs, op", [(False, "max"), (True, "mean")])
+def test_activation_loss(Model, size, abs, op):
     model = Model()
     sess = model.start_session()
 
     input_image = np.random.normal(0.0, 1.0, size=size)
     feed_dict = model.create_feed_dict(input_image)
 
-    activation_loss_func = activation_loss(model.conv_layers[0], norm=norm, op=op)
+    activation_loss_func = activation_loss(model.conv_layers[0], abs=abs, op=op)
     result = sess.run(activation_loss_func, feed_dict)
     assert isinstance(result, np.float32)
     assert result != 0.0

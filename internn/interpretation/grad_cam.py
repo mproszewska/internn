@@ -25,7 +25,7 @@ class GradCAM(Interpretation):
         interpolation=cv2.INTER_LANCZOS4,
         colormap=cv2.COLORMAP_JET,
         blend=0.5,
-        loss_norm=2,
+        loss_abs=False,
         loss_op="mean",
     ):
         """
@@ -52,8 +52,9 @@ class GradCAM(Interpretation):
         blend : float between 0.0 and 1.0, optional
             Blend factor for combining input_image with calculated activations. Setting blend to
             1.0 would result in returning not changed input_image.     
-        loss_norm : int, optional
-            Positve integer. Norm of neuron. The default is 2 which is euclidean norm.
+        loss_abs : bool, optional
+            Determines if activation values or their absolute values should be combined. The 
+            default is False.
         loss_op : str, optional
             Operation which combines norms of neurons into one value. Acceptable values are "mean",
              "max", "min", "std".
@@ -71,7 +72,7 @@ class GradCAM(Interpretation):
             "interpolation": interpolation,
             "colormap": colormap,
             "blend": blend,
-            "loss_norm": loss_norm,
+            "loss_abs": loss_abs,
             "loss_op": loss_op,
         }
         self.reporter.report_parameters(params)
@@ -81,7 +82,7 @@ class GradCAM(Interpretation):
         gradient_func = create_gradient(
             xs_tensor=xs_tensor,
             loss_tensor=loss_tensor,
-            loss_norm=loss_norm,
+            loss_abs=loss_abs,
             loss_op=loss_op,
         )
 
