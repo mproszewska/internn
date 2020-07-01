@@ -331,7 +331,7 @@ class FeatureVisualization(Interpretation):
                 input_image=image,
                 output_image_size=(width, height),
                 epoch=epoch,
-                num_octaves_per_epoch=num_octaves_per_epoch,
+                num_octaves_per_epoch=num_octaves_per_epoch-1,
                 steps_per_octave=steps_per_octave,
                 step_size=step_size,
                 tile_size=tile_size,
